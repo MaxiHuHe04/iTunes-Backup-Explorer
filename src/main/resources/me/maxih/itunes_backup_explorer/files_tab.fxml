@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="me.maxih.itunes_backup_explorer.ui.FilesTabController">
+    <SplitPane fx:id="splitPane" dividerPositions="0.4" layoutX="14.0" layoutY="14.0" AnchorPane.bottomAnchor="53.0"
+               AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <items>
+            <TreeView fx:id="domainsTreeView" editable="true" prefHeight="400.0" prefWidth="600.0" showRoot="false"
+                      SplitPane.resizableWithParent="false"/>
+            <TreeView fx:id="filesTreeView" editable="true" prefHeight="200.0" prefWidth="200.0" showRoot="false"/>
+        </items>
+    </SplitPane>
+    <Button layoutX="14.0" layoutY="413.0" mnemonicParsing="false" onAction="#exportSelectedDomains"
+            text="Export selected domains" AnchorPane.bottomAnchor="14.0" AnchorPane.leftAnchor="14.0"/>
+    <Button layoutX="648.0" layoutY="413.0" mnemonicParsing="false" onAction="#exportSelectedFiles"
+            text="Export selected files" AnchorPane.bottomAnchor="14.0" AnchorPane.rightAnchor="14.0"/>
+</AnchorPane>

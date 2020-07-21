@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+<AnchorPane xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="me.maxih.itunes_backup_explorer.ui.InfoTabController">
+    <ScrollPane style="-fx-background-color: transparent;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <VBox>
+            <HBox>
+                <VBox.margin>
+                    <Insets bottom="10.0"/>
+                </VBox.margin>
+                <Label prefWidth="150.0" text="Device name">
+                    <HBox.margin>
+                        <Insets/>
+                    </HBox.margin>
+                </Label>
+                <Label fx:id="infoDeviceName" prefWidth="300.0"/>
+            </HBox>
+            <HBox layoutX="10.0" layoutY="10.0">
+                <VBox.margin>
+                    <Insets bottom="10.0"/>
+                </VBox.margin>
+                <Label prefWidth="150.0" text="Serial number">
+                    <HBox.margin>
+                        <Insets/>
+                    </HBox.margin>
+                </Label>
+                <TextField fx:id="infoSerialNumber" editable="false" prefWidth="300.0">
+                    <font>
+                        <Font name="Monospaced Regular" size="11.0"/>
+                    </font>
+                </TextField>
+            </HBox>
+            <HBox layoutX="10.0" layoutY="37.0">
+                <VBox.margin>
+                    <Insets bottom="10.0"/>
+                </VBox.margin>
+                <Label prefWidth="150.0" text="Unique device identifier">
+                    <HBox.margin>
+                        <Insets/>
+                    </HBox.margin>
+                </Label>
+                <TextField fx:id="infoUUID" editable="false" prefWidth="300.0">
+                    <font>
+                        <Font name="Monospaced Regular" size="11.0"/>
+                    </font>
+                </TextField>
+            </HBox>
+            <HBox layoutX="10.0" layoutY="64.0">
+                <VBox.margin>
+                    <Insets bottom="10.0"/>
+                </VBox.margin>
+                <Label prefWidth="150.0" text="Product type">
+                    <HBox.margin>
+                        <Insets/>
+                    </HBox.margin>
+                </Label>
+                <Label fx:id="infoProductType" prefWidth="300.0"/>
+            </HBox>
+            <HBox layoutX="10.0" layoutY="91.0">
+                <VBox.margin>
+                    <Insets bottom="10.0"/>
+                </VBox.margin>
+                <Label prefWidth="150.0" text="Product version">
+                    <HBox.margin>
+                        <Insets/>
+                    </HBox.margin>
+                </Label>
+                <Label fx:id="infoProductVersion" prefWidth="300.0"/>
+            </HBox>
+            <HBox layoutX="10.0" layoutY="108.0">
+                <VBox.margin>
+                    <Insets bottom="10.0"/>
+                </VBox.margin>
+                <Label prefWidth="150.0" text="Build version">
+                    <HBox.margin>
+                        <Insets/>
+                    </HBox.margin>
+                </Label>
+                <Label fx:id="infoBuildVersion" prefWidth="300.0"/>
+            </HBox>
+            <HBox layoutX="10.0" layoutY="125.0">
+                <VBox.margin>
+                    <Insets bottom="10.0" top="20.0"/>
+                </VBox.margin>
+                <Label prefWidth="150.0" text="Encrypted">
+                    <HBox.margin>
+                        <Insets/>
+                    </HBox.margin>
+                </Label>
+                <Label fx:id="infoEncrypted" prefWidth="300.0"/>
+            </HBox>
+            <HBox layoutX="10.0" layoutY="192.0">
+                <VBox.margin>
+                    <Insets bottom="10.0"/>
+                </VBox.margin>
+                <Label prefWidth="150.0" text="Version">
+                    <HBox.margin>
+                        <Insets/>
+                    </HBox.margin>
+                </Label>
+                <Label fx:id="infoVersion" prefWidth="300.0"/>
+            </HBox>
+            <HBox layoutX="10.0" layoutY="219.0">
+                <Label prefWidth="150.0" text="Date">
+                    <HBox.margin>
+                        <Insets/>
+                    </HBox.margin>
+                </Label>
+                <Label fx:id="infoDate" prefWidth="300.0"/>
+            </HBox>
+            <padding>
+                <Insets bottom="14.0" left="14.0" right="14.0" top="14.0"/>
+            </padding>
+        </VBox>
+    </ScrollPane>
+</AnchorPane>

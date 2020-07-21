@@ -1,0 +1,22 @@
+.sidebar {
+    -fx-background-insets: 0;
+    -fx-border-width: 0 1 0 0;
+    -fx-border-color: gray;
+}
+
+.sidebar-button {
+    -fx-background-color: #f4f4f4;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-border-insets: 0;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-color: gray;
+}
+
+.sidebar-button:hover {
+    -fx-background-color: #dcdcdc;
+}
+
+.sidebar-button:selected {
+    -fx-background-color: #c3c3c3;
+}

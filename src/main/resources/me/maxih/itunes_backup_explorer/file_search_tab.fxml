@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="me.maxih.itunes_backup_explorer.ui.FileSearchTabController">
+    <TableView fx:id="filesTable" AnchorPane.bottomAnchor="50.0" AnchorPane.leftAnchor="0.0"
+               AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="50.0"/>
+    <Button layoutX="527.0" layoutY="14.0" mnemonicParsing="false" onAction="#searchFiles" prefHeight="25.0"
+            prefWidth="60.0" text="Search" AnchorPane.rightAnchor="14.0" AnchorPane.topAnchor="14.0"/>
+    <TextField fx:id="domainQueryField" layoutX="14.0" layoutY="14.0" prefHeight="25.0" prefWidth="200.0"
+               promptText="Domain" AnchorPane.leftAnchor="14.0"/>
+    <TextField fx:id="relativePathQueryField" layoutX="232.0" layoutY="14.0" prefHeight="25.0" prefWidth="200.0"
+               promptText="Relative Path"/>
+    <Button layoutX="535.0" layoutY="407.0" mnemonicParsing="false" onAction="#exportMatching" prefHeight="25.0"
+            prefWidth="110.0" text="Export matching" AnchorPane.bottomAnchor="14.0" AnchorPane.rightAnchor="14.0"/>
+</AnchorPane>
