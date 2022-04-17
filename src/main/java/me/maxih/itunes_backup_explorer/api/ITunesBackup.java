@@ -47,8 +47,10 @@ public class ITunesBackup {
     public File directory;
     public File manifestDBFile;
     public File manifestPListFile;
+    public File backupInfoFile;
     public NSDictionary manifestPList;
     public BackupManifest manifest;
+    public BackupInfo backupInfo;
 
     public File decryptedDatabaseFile;
     private Connection databaseCon;
@@ -59,11 +61,14 @@ public class ITunesBackup {
         this.directory = directory;
         this.manifestDBFile = new File(directory, "Manifest.db");
         this.manifestPListFile = new File(directory, "Manifest.plist");
+        this.backupInfoFile = new File(directory, "Info.plist");
 
         if (!manifestDBFile.exists()) throw new FileNotFoundException(manifestDBFile.getAbsolutePath());
         if (!manifestPListFile.exists()) throw new FileNotFoundException(manifestPListFile.getAbsolutePath());
+        if (!backupInfoFile.exists()) throw new FileNotFoundException(backupInfoFile.getAbsolutePath());
 
         this.loadManifest();
+        this.loadInfo();
 
         if (this.manifest.encrypted && this.manifest.getKeyBag().isEmpty())
             throw new BackupReadException("Backup is encrypted but no key bag was found");
@@ -76,7 +81,16 @@ public class ITunesBackup {
             this.manifestPList = (NSDictionary) PropertyListParser.parse(manifestPListFile);
             this.manifest = new BackupManifest(manifestPList);
         } catch (Exception e) {
-            throw new BackupReadException(e.getMessage(), e);
+            throw new BackupReadException(e);
+        }
+    }
+
+    private void loadInfo() throws BackupReadException {
+        try {
+            NSDictionary pList = (NSDictionary) PropertyListParser.parse(backupInfoFile);
+            this.backupInfo = new BackupInfo(pList);
+        } catch (Exception e) {
+            throw new BackupReadException(e);
         }
     }
 
