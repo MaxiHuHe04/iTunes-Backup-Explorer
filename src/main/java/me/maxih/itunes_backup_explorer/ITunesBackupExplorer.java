@@ -9,6 +9,7 @@ import javafx.stage.Stage;
 import me.maxih.itunes_backup_explorer.ui.WindowController;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public class ITunesBackupExplorer extends Application {
     Scene scene;
@@ -39,6 +40,6 @@ public class ITunesBackupExplorer extends Application {
     }
 
     public static Image getIcon(String name) {
-        return new Image(ITunesBackupExplorer.class.getResourceAsStream(name));
+        return new Image(Objects.requireNonNull(ITunesBackupExplorer.class.getResourceAsStream(name)));
     }
 }

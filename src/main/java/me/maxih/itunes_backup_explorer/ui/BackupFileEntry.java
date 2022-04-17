@@ -2,15 +2,23 @@ package me.maxih.itunes_backup_explorer.ui;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.*;
+import javafx.scene.image.Image;
+import me.maxih.itunes_backup_explorer.ITunesBackupExplorer;
 import me.maxih.itunes_backup_explorer.api.BackupFile;
 import me.maxih.itunes_backup_explorer.util.BackupPathUtils;
 
+import java.io.ByteArrayInputStream;
 import java.util.Optional;
 
 public class BackupFileEntry {
+    private static final Image domainGroupIcon = ITunesBackupExplorer.getIcon("domain_group.png");
+    private static final Image folderIcon = ITunesBackupExplorer.getIcon("folder.png");
+    private static final Image fileIcon = ITunesBackupExplorer.getIcon("file.png");
+
     private BackupFile file;
     private final String title;
     private final int pathLevel;
+    private final Image icon;
     private final BooleanProperty checkBoxSelected = new SimpleBooleanProperty(false);
     private final BooleanProperty checkBoxIndeterminate = new SimpleBooleanProperty(false);
     private final ObjectProperty<Selection> selection = new SimpleObjectProperty<>(Selection.NONE);
@@ -26,12 +34,22 @@ public class BackupFileEntry {
     public BackupFileEntry(String title) {
         this.title = title;
         this.pathLevel = 0;
+        this.icon = domainGroupIcon;
     }
 
     public BackupFileEntry(BackupFile file) {
         this.file = file;
         this.title = file.getFileName().equals("") ? file.domain : file.getFileName();
         this.pathLevel = BackupPathUtils.getPathLevel(file.relativePath);
+
+        String appID = file.domain.startsWith("AppDomain-") ? file.domain.substring("AppDomain-".length()) : null;
+        if (file.relativePath.equals("") && appID != null && file.backup.backupInfo.applications.containsKey(appID)) {
+            byte[] imageData = file.backup.backupInfo.applications.get(appID).placeholderIcon.bytes();
+            ByteArrayInputStream imageStream = new ByteArrayInputStream(imageData);
+            this.icon = new Image(imageStream);
+        } else {
+            this.icon = file.getFileType() == BackupFile.FileType.DIRECTORY ? folderIcon : fileIcon;
+        }
     }
 
     public Optional<BackupFile> getFile() {
@@ -64,6 +82,10 @@ public class BackupFileEntry {
 
     public String getParentPath() {
         return this.getFile().map(BackupFile::getParentPath).orElse("");
+    }
+
+    public Image getIcon() {
+        return this.icon;
     }
 
     public BooleanProperty checkBoxSelectedProperty() {

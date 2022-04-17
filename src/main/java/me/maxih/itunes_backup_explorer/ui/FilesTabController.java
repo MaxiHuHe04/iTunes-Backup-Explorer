@@ -6,11 +6,9 @@ import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
-import me.maxih.itunes_backup_explorer.ITunesBackupExplorer;
 import me.maxih.itunes_backup_explorer.api.*;
 import me.maxih.itunes_backup_explorer.util.BackupPathUtils;
 import me.maxih.itunes_backup_explorer.util.CollectionUtils;
@@ -25,12 +23,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class FilesTabController {
-
-    private static final Image domainGroupIcon = ITunesBackupExplorer.getIcon("domain_group.png");
-    private static final Image folderIcon = ITunesBackupExplorer.getIcon("folder.png");
-    private static final Image fileIcon = ITunesBackupExplorer.getIcon("file.png");
-
-
     private ITunesBackup selectedBackup;
 
     Task<TreeItem<BackupFileEntry>> loadDomainFilesTask;
@@ -65,7 +57,7 @@ public class FilesTabController {
                     HBox graphic = new HBox(8, checkBox);
                     graphic.setAlignment(Pos.CENTER_LEFT);
 
-                    ImageView icon = new ImageView(item.getFile().isPresent() ? folderIcon : domainGroupIcon);
+                    ImageView icon = new ImageView(item.getIcon());
                     icon.setFitWidth(32);
                     icon.setFitHeight(32);
                     graphic.getChildren().add(icon);
@@ -139,7 +131,7 @@ public class FilesTabController {
                     HBox graphic = new HBox(8, checkBox);
                     graphic.setAlignment(Pos.CENTER_LEFT);
 
-                    ImageView icon = new ImageView(isDirectory ? folderIcon : fileIcon);
+                    ImageView icon = new ImageView(item.getIcon());
                     icon.setFitWidth(16);
                     icon.setFitHeight(16);
                     graphic.getChildren().add(icon);
