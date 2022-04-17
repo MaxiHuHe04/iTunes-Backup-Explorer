@@ -5,7 +5,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.DirectoryChooser;
-import javafx.stage.FileChooser;
 import me.maxih.itunes_backup_explorer.api.*;
 
 import java.io.File;
@@ -46,38 +45,8 @@ public class FileSearchTabController {
             TableRow<BackupFileEntry> row = new TableRow<>();
 
             row.itemProperty().addListener((observable, oldValue, newValue) -> {
-                if (newValue == null) return;
-
-                ContextMenu rowMenu = new ContextMenu();
-
-                MenuItem extractItem = new MenuItem("Extract file...");
-                extractItem.setOnAction(event -> {
-                    BackupFileEntry entry = row.getItem();
-                    if (entry.getFile().isEmpty()) return;
-                    BackupFile file = entry.getFile().get();
-
-                    FileChooser chooser = new FileChooser();
-                    chooser.setInitialFileName(file.getFileName());
-                    String ext = file.getFileExtension();
-                    if (ext.length() > 0)
-                        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(ext, "*." + ext));
-                    File destination = chooser.showSaveDialog(this.filesTable.getScene().getWindow());
-                    if (destination == null) return;
-
-                    try {
-                        file.extract(destination);
-                    } catch (IOException | BackupReadException | UnsupportedCryptoException | NotUnlockedException e) {
-                        e.printStackTrace();
-                        new Alert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK).showAndWait();
-                    }
-                });
-
-                if (newValue.getFile().filter(backupFile -> backupFile.getFileType() != BackupFile.FileType.FILE).isPresent())
-                    extractItem.setDisable(true);
-
-                rowMenu.getItems().add(extractItem);
-
-                row.setContextMenu(rowMenu);
+                if (newValue == null || newValue.getFile().isEmpty()) return;
+                row.setContextMenu(FileActions.getContextMenu(newValue.getFile().get(), tableView.getScene().getWindow()));
             });
 
             return row;

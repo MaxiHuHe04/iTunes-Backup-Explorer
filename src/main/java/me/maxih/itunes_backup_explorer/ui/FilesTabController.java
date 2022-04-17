@@ -5,26 +5,20 @@ import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
-import javafx.scene.control.Label;
-import javafx.scene.control.MenuItem;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
-import javafx.stage.FileChooser;
 import me.maxih.itunes_backup_explorer.ITunesBackupExplorer;
 import me.maxih.itunes_backup_explorer.api.*;
 import me.maxih.itunes_backup_explorer.util.BackupPathUtils;
 import me.maxih.itunes_backup_explorer.util.CollectionUtils;
 
-import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
-import java.util.List;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -122,93 +116,8 @@ public class FilesTabController {
         this.filesTreeView.setCellFactory(view -> new TreeCell<>() {
             {
                 itemProperty().addListener((observable, oldValue, newValue) -> {
-                    if (newValue == null) return;
-                    boolean isDirectory = newValue.getFile().filter(f -> f.getFileType() == BackupFile.FileType.DIRECTORY).isPresent();
-
-                    MenuItem openFileItem = new MenuItem("Open file");
-                    openFileItem.setOnAction(event -> {
-                        if (newValue.getFile().isEmpty()) return;
-                        try {
-                            String ext = newValue.getFile().get().getFileExtension();
-                            File tempFile = Files.createTempFile(newValue.getFileName(), ext.length() > 0 ? ("." + ext) : ".txt").toFile();
-                            tempFile.deleteOnExit();
-                            newValue.getFile().get().extract(tempFile);
-                            Desktop.getDesktop().open(tempFile);
-                        } catch (IOException | UnsupportedCryptoException | NotUnlockedException | BackupReadException exception) {
-                            exception.printStackTrace();
-                            new Alert(Alert.AlertType.ERROR, exception.getMessage(), ButtonType.OK).showAndWait();
-                        }
-                    });
-
-                    MenuItem extractFileItem = new MenuItem("Extract file...");
-                    extractFileItem.setOnAction(event -> {
-                        if (newValue.getFile().isEmpty()) return;
-
-                        BackupFile file = newValue.getFile().get();
-
-                        FileChooser chooser = new FileChooser();
-                        chooser.setInitialFileName(file.getFileName());
-                        String ext = file.getFileExtension();
-                        if (ext.length() > 0)
-                            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(ext, "*." + ext));
-                        File destination = chooser.showSaveDialog(splitPane.getScene().getWindow());
-                        if (destination == null) return;
-
-                        try {
-                            file.extract(destination);
-                        } catch (IOException | BackupReadException | NotUnlockedException | UnsupportedCryptoException e) {
-                            e.printStackTrace();
-                            new Alert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK).showAndWait();
-                        }
-                    });
-
-                    MenuItem replaceItem = new MenuItem("Replace...");
-                    replaceItem.setOnAction(event -> {
-                        if (newValue.getFile().isEmpty()) return;
-
-                        BackupFile file = newValue.getFile().get();
-
-                        FileChooser chooser = new FileChooser();
-                        String ext = file.getFileExtension();
-                        if (ext.length() > 0)
-                            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(ext, "*." + ext));
-                        File source = chooser.showOpenDialog(splitPane.getScene().getWindow());
-                        if (source == null) return;
-
-                        try {
-                            file.replaceWith(source);
-                            selectedBackup.reEncryptDatabase();
-                        } catch (IOException | BackupReadException | NotUnlockedException | UnsupportedCryptoException | DatabaseConnectionException e) {
-                            e.printStackTrace();
-                            new Alert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK).showAndWait();
-                        }
-                    });
-
-                    MenuItem deleteItem = new MenuItem("Delete");
-                    deleteItem.setDisable(true);
-                    deleteItem.setOnAction(event -> {
-                        // TODO: delete file
-                    });
-
-                    MenuItem insertFilesItem = new MenuItem("Insert files...");
-                    insertFilesItem.setDisable(true);
-                    insertFilesItem.setOnAction(event -> {
-                        FileChooser chooser = new FileChooser();
-                        List<File> files = chooser.showOpenMultipleDialog(splitPane.getScene().getWindow());
-                        if (files == null) return;
-
-                        for (File file : files) {
-                            System.out.println(file.getAbsolutePath());
-                            // TODO: insert files
-                        }
-                    });
-
-                    ContextMenu menu = new ContextMenu();
-
-                    if (isDirectory) menu.getItems().add(insertFilesItem);
-                    else menu.getItems().addAll(openFileItem, extractFileItem, replaceItem, deleteItem);
-
-                    setContextMenu(menu);
+                    if (newValue == null || newValue.getFile().isEmpty()) return;
+                    setContextMenu(FileActions.getContextMenu(newValue.getFile().get(), splitPane.getScene().getWindow()));
                 });
             }
 
