@@ -5,18 +5,16 @@ import me.maxih.itunes_backup_explorer.util.BackupPathUtils;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.nio.ByteBuffer;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Optional;
 
 public class BackupFile {
     public final ITunesBackup backup;
@@ -79,8 +77,8 @@ public class BackupFile {
         return fileType;
     }
 
-    public Optional<File> getContentFile() {
-        return Optional.ofNullable(contentFile);
+    public File getContentFile() {
+        return contentFile;
     }
 
     public long getSize() {
@@ -167,14 +165,56 @@ public class BackupFile {
 
     }
 
-    public void replaceWith(File newFile) {
-        if (!newFile.exists() || newFile.isDirectory()) return;
+    public void replaceWith(File newFile) throws IOException, BackupReadException, UnsupportedCryptoException, NotUnlockedException, DatabaseConnectionException {
+        if (!newFile.exists() || newFile.isDirectory()) throw new IOException("Not a file");
+        if (this.fileType != FileType.FILE) throw new UnsupportedOperationException("Not implemented yet");
         this.backupOriginal();
-        // TODO
+        this.size = newFile.length();
+        this.properties.put("Size", this.size);
+        if (this.isEncrypted()) {
+            if (this.backup.manifest.getKeyBag().isEmpty())
+                throw new BackupReadException("Encrypted file in non-encrypted backup");
+
+            try {
+                byte[] key = this.backup.manifest.getKeyBag().get()
+                        .unwrapKeyForClass(ByteBuffer.allocate(4).putInt(this.protectionClass).array(), this.encryptionKey);
+
+                Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
+                c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(new byte[16]));
+
+                try (
+                        BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(newFile));
+                        CipherOutputStream outputStream = new CipherOutputStream(new BufferedOutputStream(new FileOutputStream(this.contentFile)), c)
+                ) {
+                    inputStream.transferTo(outputStream);
+                }
+
+            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
+                throw new UnsupportedCryptoException(e);
+            } catch (InvalidKeyException e) {
+                throw new BackupReadException(e);
+            }
+        } else {
+            Files.copy(newFile.toPath(), this.contentFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+        }
+
+        this.backup.updateFileInfo(this.fileID, this.data);
     }
 
-    private void backupOriginal() {
-        // TODO
+    private void backupOriginal() throws IOException {
+        File dir = new File(this.backup.directory, "_BackupExplorer");
+        if (!dir.isDirectory() && !dir.mkdir())
+            throw new IOException("Backup directory '" + dir.getAbsolutePath() + "' could not be created");
+
+        // Incremental suffix
+        String backupName = this.contentFile.getName();
+        int i = 0;
+        while (new File(dir, backupName + ".plist").exists() || new File(dir, backupName + ".bak").exists()) {
+            backupName = this.contentFile.getName() + "." + (++i);
+        }
+
+        BinaryPropertyListWriter.write(new File(dir, backupName + ".plist"), this.data);
+        Files.copy(this.contentFile.toPath(), new File(dir, backupName + ".bak").toPath());
     }
 
 

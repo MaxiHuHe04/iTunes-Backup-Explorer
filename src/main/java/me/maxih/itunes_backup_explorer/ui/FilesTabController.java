@@ -163,9 +163,25 @@ public class FilesTabController {
                     });
 
                     MenuItem replaceItem = new MenuItem("Replace...");
-                    replaceItem.setDisable(true);
                     replaceItem.setOnAction(event -> {
-                        // TODO: replace file
+                        if (newValue.getFile().isEmpty()) return;
+
+                        BackupFile file = newValue.getFile().get();
+
+                        FileChooser chooser = new FileChooser();
+                        String ext = file.getFileExtension();
+                        if (ext.length() > 0)
+                            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(ext, "*." + ext));
+                        File source = chooser.showOpenDialog(splitPane.getScene().getWindow());
+                        if (source == null) return;
+
+                        try {
+                            file.replaceWith(source);
+                            selectedBackup.reEncryptDatabase();
+                        } catch (IOException | BackupReadException | NotUnlockedException | UnsupportedCryptoException | DatabaseConnectionException e) {
+                            e.printStackTrace();
+                            new Alert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK).showAndWait();
+                        }
                     });
 
                     MenuItem deleteItem = new MenuItem("Delete");

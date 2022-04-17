@@ -1,7 +1,7 @@
 # iTunes Backup Explorer
 
-iTunes Backup Explorer is a graphical open-source tool that can show 
-files in iPhone and iPad backups and extract them.
+iTunes Backup Explorer is a graphical open-source tool that can show, extract,
+and replace files in iPhone and iPad backups.
 
 It supports both **encrypted** and non-encrypted backups, 
 currently from iOS 10.2 onwards.
@@ -26,6 +26,6 @@ his sources
 iOS Hacker's Handbook, 
 [a GitHub comment](https://github.com/horrorho/InflatableDonkey/issues/41#issuecomment-261927890),
 the [iphone-dataprotection](https://code.google.com/archive/p/iphone-dataprotection/) project
-and the Apple iOS Secutity Guide for iOS 11 (in the [Web Archive](http://web.archive.org/web/20180615172056/https://www.apple.com/business/docs/iOS_Security_Guide.pdf))
+and the Apple iOS Security Guide for iOS 11 (in the [Web Archive](http://web.archive.org/web/20180615172056/https://www.apple.com/business/docs/iOS_Security_Guide.pdf))
 
 and [Forensic Analysis of iTunes Backups](http://www.farleyforensics.com/2019/04/14/forensic-analysis-of-itunes-backups/) by Jack Farley

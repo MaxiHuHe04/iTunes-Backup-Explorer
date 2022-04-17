@@ -1,5 +1,6 @@
 package me.maxih.itunes_backup_explorer.api;
 
+import com.dd.plist.BinaryPropertyListWriter;
 import com.dd.plist.NSDictionary;
 import com.dd.plist.PropertyListFormatException;
 import com.dd.plist.PropertyListParser;
@@ -7,6 +8,7 @@ import org.xml.sax.SAXException;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -14,6 +16,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -120,6 +123,49 @@ public class ITunesBackup {
         }
     }
 
+    public void reEncryptDatabase() throws IOException, BackupReadException, DatabaseConnectionException {
+        if (!this.manifest.encrypted || this.manifest.getKeyBag().isEmpty()) return;
+
+        if (this.decryptedDatabaseFile == null || !this.decryptedDatabaseFile.exists())
+            throw new DatabaseConnectionException();
+
+        File dir = new File(this.directory, "_BackupExplorer");
+        if (!dir.isDirectory() && !dir.mkdir())
+            throw new IOException("Backup directory '" + dir.getAbsolutePath() + "' could not be created");
+
+        // Incremental backup suffix
+        String backupName = "Manifest.db";
+        int i = 0;
+        while (new File(dir, backupName + ".bak").exists()) backupName = "Manifest.db." + (++i);
+        Files.copy(this.manifestDBFile.toPath(), new File(dir, backupName + ".bak").toPath());
+
+        byte[] manifestClass = new byte[4];
+        byte[] manifestKey = new byte[this.manifest.manifestKey.length() - 4];
+        ByteBuffer manifestKeyBuffer = ByteBuffer.wrap(this.manifest.manifestKey.bytes());
+
+        ByteBuffer.wrap(manifestClass).putInt(manifestKeyBuffer.order(ByteOrder.LITTLE_ENDIAN).getInt());
+
+        manifestKeyBuffer.order(ByteOrder.BIG_ENDIAN).get(manifestKey);
+
+        try {
+            byte[] key = this.manifest.getKeyBag().get().unwrapKeyForClass(manifestClass, manifestKey);
+
+            Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
+            c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(new byte[16]));
+            try (
+                    CipherOutputStream outputStream = new CipherOutputStream(new BufferedOutputStream(new FileOutputStream(this.manifestDBFile)), c);
+                    BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(this.decryptedDatabaseFile));
+            ) {
+                inputStream.transferTo(outputStream);
+            }
+        } catch (FileNotFoundException | InvalidKeyException e) {
+            throw new BackupReadException(e);
+        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException
+                | NotUnlockedException | UnsupportedCryptoException e) {
+            e.printStackTrace();
+        }
+    }
+
     public boolean connectToDatabase() {
         if (decryptedDatabaseFile == null) return false;
 
@@ -218,6 +264,20 @@ public class ITunesBackup {
                     for (int i = 0; i < domains.length; i++) statement.setString(i + 1, domains[i]);
                 }
         );
+    }
+
+    public void updateFileInfo(String fileID, NSDictionary data) throws DatabaseConnectionException {
+        if (!databaseConnected() && !this.connectToDatabase()) throw new DatabaseConnectionException();
+
+        try {
+            PreparedStatement statement = this.databaseCon.prepareStatement("UPDATE Files SET file = ? WHERE fileID = ?");
+            byte[] plist = BinaryPropertyListWriter.writeToArray(data);
+            statement.setBytes(1, plist);
+            statement.setString(2, fileID);
+            statement.executeUpdate();
+        } catch (SQLException | IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
