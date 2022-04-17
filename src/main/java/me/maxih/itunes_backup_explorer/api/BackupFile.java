@@ -3,18 +3,15 @@ package me.maxih.itunes_backup_explorer.api;
 import com.dd.plist.*;
 import me.maxih.itunes_backup_explorer.util.BackupPathUtils;
 
-import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
-import javax.crypto.CipherOutputStream;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.*;
-import java.security.InvalidAlgorithmParameterException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 
 public class BackupFile {
     public final ITunesBackup backup;
@@ -115,29 +112,7 @@ public class BackupFile {
                         throw new BackupReadException("Encrypted file in non-encrypted backup");
 
                     try {
-                        byte[] key = this.backup.manifest.getKeyBag().get()
-                                .unwrapKeyForClass(ByteBuffer.allocate(4).putInt(this.protectionClass).array(), this.encryptionKey);
-
-                        Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
-                        c.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(new byte[16]));
-
-                        try (
-                                CipherInputStream inputStream = new CipherInputStream(new FileInputStream(this.contentFile), c);
-                                FileOutputStream fileOutputStream = new FileOutputStream(destination);
-                                BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fileOutputStream)
-                        ) {
-                            inputStream.transferTo(bufferedOutputStream);
-                            bufferedOutputStream.flush();
-
-                            fileOutputStream.getChannel().truncate(this.size);
-                            long padding = this.size - fileOutputStream.getChannel().size();
-                            if (padding != 0 && padding < Integer.MAX_VALUE) {
-                                bufferedOutputStream.write(new byte[(int) padding]);
-                            }
-                        }
-
-                    } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
-                        throw new UnsupportedCryptoException(e);
+                        this.backup.manifest.getKeyBag().get().decryptFile(this.protectionClass, this.encryptionKey, this.contentFile, destination);
                     } catch (InvalidKeyException e) {
                         throw new BackupReadException(e);
                     }
@@ -166,31 +141,18 @@ public class BackupFile {
     }
 
     public void replaceWith(File newFile) throws IOException, BackupReadException, UnsupportedCryptoException, NotUnlockedException, DatabaseConnectionException {
-        if (!newFile.exists() || newFile.isDirectory()) throw new IOException("Not a file");
+        BasicFileAttributes newFileAttributes = Files.readAttributes(newFile.toPath(), BasicFileAttributes.class);
+        if (!newFileAttributes.isRegularFile()) throw new IOException("Not a file");
         if (this.fileType != FileType.FILE) throw new UnsupportedOperationException("Not implemented yet");
         this.backupOriginal();
-        this.size = newFile.length();
+        this.size = newFileAttributes.size();
         this.properties.put("Size", this.size);
         if (this.isEncrypted()) {
             if (this.backup.manifest.getKeyBag().isEmpty())
                 throw new BackupReadException("Encrypted file in non-encrypted backup");
 
             try {
-                byte[] key = this.backup.manifest.getKeyBag().get()
-                        .unwrapKeyForClass(ByteBuffer.allocate(4).putInt(this.protectionClass).array(), this.encryptionKey);
-
-                Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
-                c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(new byte[16]));
-
-                try (
-                        BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(newFile));
-                        CipherOutputStream outputStream = new CipherOutputStream(new BufferedOutputStream(new FileOutputStream(this.contentFile)), c)
-                ) {
-                    inputStream.transferTo(outputStream);
-                }
-
-            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
-                throw new UnsupportedCryptoException(e);
+                this.backup.manifest.getKeyBag().get().decryptFile(this.protectionClass, this.encryptionKey, newFile, this.contentFile);
             } catch (InvalidKeyException e) {
                 throw new BackupReadException(e);
             }

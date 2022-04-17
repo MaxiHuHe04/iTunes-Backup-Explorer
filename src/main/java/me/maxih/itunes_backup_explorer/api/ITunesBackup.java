@@ -6,20 +6,14 @@ import com.dd.plist.PropertyListFormatException;
 import com.dd.plist.PropertyListParser;
 import org.xml.sax.SAXException;
 
-import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
-import javax.crypto.CipherOutputStream;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import javax.xml.parsers.ParserConfigurationException;
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 import java.text.ParseException;
 import java.util.Date;
@@ -92,38 +86,25 @@ public class ITunesBackup {
                 && this.manifest.getKeyBag().get().isLocked();
     }
 
-    public void decryptDatabase() throws BackupReadException {
+    public void decryptDatabase() throws BackupReadException, IOException, UnsupportedCryptoException, NotUnlockedException {
         if (!this.manifest.encrypted || this.manifest.getKeyBag().isEmpty()) return;
 
-        byte[] manifestClass = new byte[4];
         byte[] manifestKey = new byte[this.manifest.manifestKey.length() - 4];
         ByteBuffer manifestKeyBuffer = ByteBuffer.wrap(this.manifest.manifestKey.bytes());
 
-        ByteBuffer.wrap(manifestClass).putInt(manifestKeyBuffer.order(ByteOrder.LITTLE_ENDIAN).getInt());
+        int manifestClass = manifestKeyBuffer.order(ByteOrder.LITTLE_ENDIAN).getInt();
 
         manifestKeyBuffer.order(ByteOrder.BIG_ENDIAN).get(manifestKey);
 
         try {
-            byte[] key = this.manifest.getKeyBag().get().unwrapKeyForClass(manifestClass, manifestKey);
-
-            Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
-            c.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(new byte[16]));
-            CipherInputStream inputStream = new CipherInputStream(new FileInputStream(manifestDBFile), c);
-
             this.decryptedDatabaseFile = File.createTempFile("decrypted-manifest", ".sqlite3");
-            BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(decryptedDatabaseFile));
-            inputStream.transferTo(outputStream);
-            inputStream.close();
-            outputStream.close();
+            this.manifest.getKeyBag().get().decryptFile(manifestClass, manifestKey, this.manifestDBFile, this.decryptedDatabaseFile);
         } catch (FileNotFoundException | InvalidKeyException e) {
             throw new BackupReadException(e);
-        } catch (NoSuchPaddingException | NoSuchAlgorithmException | IOException
-                | InvalidAlgorithmParameterException | NotUnlockedException | UnsupportedCryptoException e) {
-            e.printStackTrace();
         }
     }
 
-    public void reEncryptDatabase() throws IOException, BackupReadException, DatabaseConnectionException {
+    public void reEncryptDatabase() throws IOException, BackupReadException, DatabaseConnectionException, UnsupportedCryptoException, NotUnlockedException {
         if (!this.manifest.encrypted || this.manifest.getKeyBag().isEmpty()) return;
 
         if (this.decryptedDatabaseFile == null || !this.decryptedDatabaseFile.exists())
@@ -139,30 +120,17 @@ public class ITunesBackup {
         while (new File(dir, backupName + ".bak").exists()) backupName = "Manifest.db." + (++i);
         Files.copy(this.manifestDBFile.toPath(), new File(dir, backupName + ".bak").toPath());
 
-        byte[] manifestClass = new byte[4];
         byte[] manifestKey = new byte[this.manifest.manifestKey.length() - 4];
         ByteBuffer manifestKeyBuffer = ByteBuffer.wrap(this.manifest.manifestKey.bytes());
 
-        ByteBuffer.wrap(manifestClass).putInt(manifestKeyBuffer.order(ByteOrder.LITTLE_ENDIAN).getInt());
+        int manifestClass = manifestKeyBuffer.order(ByteOrder.LITTLE_ENDIAN).getInt();
 
         manifestKeyBuffer.order(ByteOrder.BIG_ENDIAN).get(manifestKey);
 
         try {
-            byte[] key = this.manifest.getKeyBag().get().unwrapKeyForClass(manifestClass, manifestKey);
-
-            Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
-            c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(new byte[16]));
-            try (
-                    CipherOutputStream outputStream = new CipherOutputStream(new BufferedOutputStream(new FileOutputStream(this.manifestDBFile)), c);
-                    BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(this.decryptedDatabaseFile));
-            ) {
-                inputStream.transferTo(outputStream);
-            }
+            this.manifest.getKeyBag().get().encryptFile(manifestClass, manifestKey, this.decryptedDatabaseFile, this.manifestDBFile);
         } catch (FileNotFoundException | InvalidKeyException e) {
             throw new BackupReadException(e);
-        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidAlgorithmParameterException
-                | NotUnlockedException | UnsupportedCryptoException e) {
-            e.printStackTrace();
         }
     }
 

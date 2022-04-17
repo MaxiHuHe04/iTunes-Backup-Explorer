@@ -5,14 +5,14 @@ import org.bouncycastle.crypto.digests.SHA1Digest;
 import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
 import org.bouncycastle.crypto.params.KeyParameter;
 
-import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
+import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.*;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
@@ -172,6 +172,76 @@ public class KeyBag {
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             throw new UnsupportedCryptoException(e);
         }
+    }
+
+
+    public InputStream decryptStream(byte[] protectionClass, byte[] persistentKey, InputStream source) throws UnsupportedCryptoException, BackupReadException, NotUnlockedException, InvalidKeyException {
+        byte[] key = this.unwrapKeyForClass(protectionClass, persistentKey);
+
+        try {
+            Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
+            c.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(new byte[16]));
+            return new CipherInputStream(source, c);
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException e) {
+            throw new UnsupportedCryptoException(e);
+        }
+    }
+
+    public void decryptFile(byte[] protectionClass, byte[] persistentKey, File source, File destination, long size) throws IOException, BackupReadException, UnsupportedCryptoException, NotUnlockedException, InvalidKeyException {
+        try (
+                BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(source));
+                InputStream decryptStream = decryptStream(protectionClass, persistentKey, inputStream);
+
+                FileOutputStream fileOutputStream = new FileOutputStream(destination);
+                BufferedOutputStream outputStream = new BufferedOutputStream(fileOutputStream)
+        ) {
+            decryptStream.transferTo(outputStream);
+            outputStream.flush();
+
+            if (size != -1L) {
+                fileOutputStream.getChannel().truncate(size);
+                long padding = size - fileOutputStream.getChannel().size();
+                if (padding != 0 && padding < Integer.MAX_VALUE) {
+                    outputStream.write(new byte[(int) padding]);
+                }
+            }
+        }
+    }
+
+    public void decryptFile(int protectionClass, byte[] persistentKey, File source, File destination, long size) throws BackupReadException, UnsupportedCryptoException, NotUnlockedException, IOException, InvalidKeyException {
+        decryptFile(ByteBuffer.allocate(4).putInt(protectionClass).array(), persistentKey, source, destination, size);
+    }
+
+    public void decryptFile(int protectionClass, byte[] persistentKey, File source, File destination) throws BackupReadException, UnsupportedCryptoException, NotUnlockedException, IOException, InvalidKeyException {
+        decryptFile(protectionClass, persistentKey, source, destination, -1);
+    }
+
+    public InputStream encryptStream(byte[] protectionClass, byte[] persistentKey, InputStream source) throws BackupReadException, UnsupportedCryptoException, NotUnlockedException, InvalidKeyException {
+        byte[] key = this.unwrapKeyForClass(protectionClass, persistentKey);
+
+        try {
+            Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
+            c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(new byte[16]));
+            return new CipherInputStream(source, c);
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException e) {
+            throw new UnsupportedCryptoException(e);
+        }
+    }
+
+    public void encryptFile(byte[] protectionClass, byte[] persistentKey, File source, File destination) throws BackupReadException, UnsupportedCryptoException, NotUnlockedException, InvalidKeyException, IOException {
+        try (
+                BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(source));
+                InputStream encryptStream = encryptStream(protectionClass, persistentKey, inputStream);
+
+                FileOutputStream fileOutputStream = new FileOutputStream(destination);
+                BufferedOutputStream outputStream = new BufferedOutputStream(fileOutputStream)
+        ) {
+            encryptStream.transferTo(outputStream);
+        }
+    }
+
+    public void encryptFile(int protectionClass, byte[] persistentKey, File source, File destination) throws BackupReadException, UnsupportedCryptoException, NotUnlockedException, IOException, InvalidKeyException {
+        encryptFile(ByteBuffer.allocate(4).putInt(protectionClass).array(), persistentKey, source, destination);
     }
 
 }

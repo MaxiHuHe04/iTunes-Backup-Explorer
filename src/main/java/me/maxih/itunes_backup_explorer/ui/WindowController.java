@@ -10,8 +10,11 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import me.maxih.itunes_backup_explorer.api.BackupReadException;
 import me.maxih.itunes_backup_explorer.api.ITunesBackup;
+import me.maxih.itunes_backup_explorer.api.NotUnlockedException;
+import me.maxih.itunes_backup_explorer.api.UnsupportedCryptoException;
 
 import java.io.File;
+import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -97,11 +100,16 @@ public class WindowController {
             return true;
         } catch (InvalidKeyException e) {
             new Alert(Alert.AlertType.ERROR, "The given password is not valid").showAndWait();
-            return false;
         } catch (BackupReadException e) {
             new Alert(Alert.AlertType.ERROR, "The backup could not be read").showAndWait();
-            return false;
+        } catch (UnsupportedCryptoException e) {
+            new Alert(Alert.AlertType.ERROR, "Your system doesn't support the necessary cryptography").showAndWait();
+        } catch (NotUnlockedException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            new Alert(Alert.AlertType.ERROR, e.getMessage()).showAndWait();
         }
+        return false;
     }
 
     public void selectBackup(ITunesBackup backup) {
