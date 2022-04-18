@@ -2,26 +2,21 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+
 <VBox prefHeight="500.0" prefWidth="800.0" stylesheets="@stylesheet.css"
-      xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1"
+      xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="me.maxih.itunes_backup_explorer.ui.WindowController">
     <BorderPane VBox.vgrow="ALWAYS">
         <top>
             <MenuBar BorderPane.alignment="CENTER">
-                <Menu mnemonicParsing="false" disable="true" text="File">
-                    <MenuItem mnemonicParsing="false" text="New"/>
-                    <MenuItem mnemonicParsing="false" text="Open…"/>
-                    <Menu mnemonicParsing="false" text="Open Recent"/>
+                <Menu mnemonicParsing="false" text="File">
+                    <MenuItem disable="true" mnemonicParsing="false" text="Load backup…"/>
                     <SeparatorMenuItem mnemonicParsing="false"/>
-                    <MenuItem mnemonicParsing="false" text="Close"/>
-                    <MenuItem mnemonicParsing="false" text="Save"/>
-                    <MenuItem mnemonicParsing="false" text="Save As…"/>
-                    <SeparatorMenuItem mnemonicParsing="false"/>
-                    <MenuItem mnemonicParsing="false" text="Preferences…"/>
+                    <MenuItem mnemonicParsing="false" onAction="#openPreferences" text="Preferences…"/>
                     <SeparatorMenuItem mnemonicParsing="false"/>
                     <MenuItem mnemonicParsing="false" text="Quit"/>
                 </Menu>
-                <Menu mnemonicParsing="false" disable="true" text="Edit">
+                <Menu disable="true" mnemonicParsing="false" text="Edit">
                     <MenuItem mnemonicParsing="false" text="Undo"/>
                     <MenuItem mnemonicParsing="false" text="Redo"/>
                     <SeparatorMenuItem mnemonicParsing="false"/>

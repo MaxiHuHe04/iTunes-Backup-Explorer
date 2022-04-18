@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.14-internal"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="me.maxih.itunes_backup_explorer.ui.PreferencesController">
+   <VBox layoutX="86.0" layoutY="93.0" prefHeight="200.0" prefWidth="384.0" AnchorPane.bottomAnchor="50.0"
+         AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="20.0">
+      <Label text="Backup roots:">
+         <VBox.margin>
+            <Insets/>
+         </VBox.margin>
+      </Label>
+      <TextArea fx:id="backupRootsTextArea" prefHeight="200.0" prefWidth="200.0">
+         <VBox.margin>
+            <Insets top="10.0"/>
+         </VBox.margin>
+      </TextArea>
+   </VBox>
+   <HBox AnchorPane.bottomAnchor="20.0" AnchorPane.rightAnchor="20.0">
+      <Button mnemonicParsing="false" onAction="#save" text="Save">
+         <HBox.margin>
+            <Insets right="10.0"/>
+         </HBox.margin>
+      </Button>
+      <Button mnemonicParsing="false" onAction="#cancel" text="Cancel"/>
+   </HBox>
+   <Button layoutX="20.0" layoutY="355.0" mnemonicParsing="false" onAction="#resetToDefaults" text="Reset to defaults"
+           AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0"/>
+</AnchorPane>

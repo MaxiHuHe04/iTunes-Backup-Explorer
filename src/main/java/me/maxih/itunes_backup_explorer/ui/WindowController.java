@@ -2,12 +2,18 @@ package me.maxih.itunes_backup_explorer.ui;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import me.maxih.itunes_backup_explorer.ITunesBackupExplorer;
 import me.maxih.itunes_backup_explorer.api.BackupReadException;
 import me.maxih.itunes_backup_explorer.api.ITunesBackup;
 import me.maxih.itunes_backup_explorer.api.NotUnlockedException;
@@ -15,6 +21,8 @@ import me.maxih.itunes_backup_explorer.api.UnsupportedCryptoException;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -70,7 +78,11 @@ public class WindowController {
     }
 
     public void loadBackups() {
-        this.backups = ITunesBackup.getBackups(new File(System.getenv("APPDATA"), "Apple Computer\\MobileSync\\Backup"));
+        this.backupSidebarBox.getChildren().clear();
+        this.backups = new ArrayList<>();
+        for (String root : PreferencesController.getBackupRoots()) {
+            this.backups.addAll(ITunesBackup.getBackups(new File(root)));
+        }
         this.backups.forEach(backup -> {
             ToggleButton backupEntry = new ToggleButton(backup.manifest.deviceName + "\n" + BACKUP_DATE_FMT.format(backup.manifest.date));
             backupEntry.getStyleClass().add("sidebar-button");
@@ -138,4 +150,26 @@ public class WindowController {
                 .ifPresent(this::selectBackup);
     }
 
+    @FXML
+    public void openPreferences() {
+        FXMLLoader fxmlLoader = new FXMLLoader(ITunesBackupExplorer.class.getResource("preferences.fxml"));
+        try {
+            Parent root = fxmlLoader.load();
+            PreferencesController controller = fxmlLoader.getController();
+            controller.reloadCallback = this::loadBackups;
+
+            Stage prefsWindow = new Stage();
+            prefsWindow.initModality(Modality.APPLICATION_MODAL);
+            prefsWindow.initOwner(tabPane.getScene().getWindow());
+
+            Scene prefsScene = new Scene(root, 600, 400);
+            prefsWindow.setScene(prefsScene);
+            prefsWindow.setTitle("Preferences");
+            prefsWindow.getIcons().addAll(((Stage) tabPane.getScene().getWindow()).getIcons());
+            prefsWindow.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+            new Alert(Alert.AlertType.ERROR, e.getMessage());
+        }
+    }
 }

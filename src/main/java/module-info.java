@@ -5,6 +5,7 @@ module me.maxih.itunes_backup_explorer {
     requires org.bouncycastle.provider;
     requires java.sql;
     requires java.desktop;
+    requires java.prefs;
 
     opens me.maxih.itunes_backup_explorer.ui to javafx.fxml;
     exports me.maxih.itunes_backup_explorer;
