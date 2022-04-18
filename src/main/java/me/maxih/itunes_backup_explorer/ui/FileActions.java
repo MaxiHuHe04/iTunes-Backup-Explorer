@@ -26,7 +26,7 @@ public class FileActions {
         } catch (IOException | UnsupportedCryptoException | NotUnlockedException |
                  BackupReadException exception) {
             exception.printStackTrace();
-            new Alert(Alert.AlertType.ERROR, exception.getMessage(), ButtonType.OK).showAndWait();
+            Dialogs.showAlert(Alert.AlertType.ERROR, exception.getMessage(), ButtonType.OK);
         }
     }
 
@@ -43,7 +43,7 @@ public class FileActions {
             file.extract(destination);
         } catch (IOException | BackupReadException | NotUnlockedException | UnsupportedCryptoException e) {
             e.printStackTrace();
-            new Alert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK).showAndWait();
+            Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK);
         }
     }
 
@@ -61,7 +61,7 @@ public class FileActions {
         } catch (IOException | BackupReadException | NotUnlockedException | UnsupportedCryptoException |
                  DatabaseConnectionException e) {
             e.printStackTrace();
-            new Alert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK).showAndWait();
+            Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK);
         }
     }
 

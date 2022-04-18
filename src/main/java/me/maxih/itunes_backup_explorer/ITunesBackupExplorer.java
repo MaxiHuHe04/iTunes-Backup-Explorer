@@ -42,4 +42,6 @@ public class ITunesBackupExplorer extends Application {
     public static Image getIcon(String name) {
         return new Image(Objects.requireNonNull(ITunesBackupExplorer.class.getResourceAsStream(name)));
     }
+
+    public static Image APP_ICON = getIcon("icon.png");
 }

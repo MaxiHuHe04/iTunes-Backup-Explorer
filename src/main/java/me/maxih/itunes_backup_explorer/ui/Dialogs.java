@@ -12,6 +12,7 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+import me.maxih.itunes_backup_explorer.ITunesBackupExplorer;
 
 import java.util.Optional;
 
@@ -22,6 +23,7 @@ public class Dialogs {
         dialog.setTitle("Enter the password");
         dialog.setHeaderText("This backup is encrypted with a password");
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        ((Stage) dialog.getDialogPane().getScene().getWindow()).getIcons().add(ITunesBackupExplorer.APP_ICON);
 
         PasswordField passwordField = new PasswordField();
         dialog.setOnShown(event -> Platform.runLater(passwordField::requestFocus));
@@ -38,6 +40,12 @@ public class Dialogs {
         return dialog.showAndWait();
     }
 
+    public static Optional<ButtonType> showAlert(Alert.AlertType type, String message, ButtonType... buttonTypes) {
+        Alert alert = new Alert(type, message, buttonTypes);
+        ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().add(ITunesBackupExplorer.APP_ICON);
+        return alert.showAndWait();
+    }
+
     public static class ProgressAlert extends Stage {
 
         public ProgressAlert(String title, Task<?> task, EventHandler<WindowEvent> cancelEventHandler) {
@@ -45,6 +53,7 @@ public class Dialogs {
             this.setTitle(title);
             this.setResizable(false);
             this.setOnCloseRequest(cancelEventHandler);
+            this.getIcons().add(ITunesBackupExplorer.APP_ICON);
 
             ProgressBar bar = new ProgressBar();
             bar.setPrefSize(250, 50);

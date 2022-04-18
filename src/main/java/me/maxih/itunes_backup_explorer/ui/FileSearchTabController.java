@@ -75,7 +75,7 @@ public class FileSearchTabController {
                 backupFile.getFile().get().extractToFolder(destination, true);
             } catch (IOException | BackupReadException | NotUnlockedException | UnsupportedCryptoException e) {
                 e.printStackTrace();
-                new Alert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK).showAndWait();
+                Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK);
             }
         });
     }

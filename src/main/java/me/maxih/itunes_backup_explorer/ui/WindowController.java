@@ -124,15 +124,15 @@ public class WindowController {
             selectedBackup.decryptDatabase();
             return true;
         } catch (InvalidKeyException e) {
-            new Alert(Alert.AlertType.ERROR, "The given password is not valid").showAndWait();
+            Dialogs.showAlert(Alert.AlertType.ERROR, "The given password is not valid");
         } catch (BackupReadException e) {
-            new Alert(Alert.AlertType.ERROR, "The backup could not be read").showAndWait();
+            Dialogs.showAlert(Alert.AlertType.ERROR, "The backup could not be read");
         } catch (UnsupportedCryptoException e) {
-            new Alert(Alert.AlertType.ERROR, "Your system doesn't support the necessary cryptography").showAndWait();
+            Dialogs.showAlert(Alert.AlertType.ERROR, "Your system doesn't support the necessary cryptography");
         } catch (NotUnlockedException e) {
             e.printStackTrace();
         } catch (IOException e) {
-            new Alert(Alert.AlertType.ERROR, e.getMessage()).showAndWait();
+            Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage());
         }
         return false;
     }
@@ -178,11 +178,11 @@ public class WindowController {
             Scene prefsScene = new Scene(root, 600, 400);
             prefsWindow.setScene(prefsScene);
             prefsWindow.setTitle("Preferences");
-            prefsWindow.getIcons().addAll(((Stage) tabPane.getScene().getWindow()).getIcons());
+            prefsWindow.getIcons().add(ITunesBackupExplorer.APP_ICON);
             prefsWindow.show();
         } catch (IOException e) {
             e.printStackTrace();
-            new Alert(Alert.AlertType.ERROR, e.getMessage());
+            Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage());
         }
     }
 }
