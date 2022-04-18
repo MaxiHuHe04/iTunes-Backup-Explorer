@@ -6,9 +6,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.TabPane;
-import javafx.scene.control.ToggleButton;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
@@ -19,6 +18,7 @@ import me.maxih.itunes_backup_explorer.api.ITunesBackup;
 import me.maxih.itunes_backup_explorer.api.NotUnlockedException;
 import me.maxih.itunes_backup_explorer.api.UnsupportedCryptoException;
 
+import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.List;
 import java.util.*;
 
 public class WindowController {
@@ -90,6 +91,18 @@ public class WindowController {
             backupEntry.setMaxWidth(Integer.MAX_VALUE);
             backupEntry.setPrefHeight(60);
             backupEntry.setId(backup.directory.getName());
+
+            MenuItem openBackupDirectory = new MenuItem("Open backup directory");
+            openBackupDirectory.setOnAction(event -> {
+                try {
+                    Desktop.getDesktop().browse(backup.directory.toURI());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+            ContextMenu backupContextMenu = new ContextMenu(openBackupDirectory);
+            backupEntry.setContextMenu(backupContextMenu);
+
             this.backupSidebarBox.getChildren().add(backupEntry);
 
             this.sidebarButtons.put(backup, backupEntry);
