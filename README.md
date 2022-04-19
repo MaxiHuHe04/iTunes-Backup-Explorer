@@ -10,7 +10,33 @@ Most programs that support encrypted backups are either limited trials
 or expensive. There are apparently only very few open-source projects 
 that target this issue and none that are also useful for the average user.
 
-### Credits
+![Program screenshot](https://user-images.githubusercontent.com/12913518/164055723-2d234fa8-922f-439d-974c-f9e7e560a438.png)
+
+## Installation
+
+- Open your terminal and type in `java -version`.
+- If the command was not found or the version is below **11**, 
+download and install Java for your operating system, e.g. from [here](https://www.oracle.com/java/technologies/downloads).
+- Download the jar file of the [latest release](https://github.com/MaxiHuHe04/iTunes-Backup-Explorer/releases/latest) of iTunes Backup Explorer.
+
+**Windows**
+- Simply double-click the downloaded file to start the program.
+- From the command line: `java -jar JARFILE.jar`.
+Replace `JARFILE.jar` with the name of the file you downloaded.
+
+**macOS**
+- `cd` to the download directory and type in `chmod +x JARFILE.jar`.
+- You may need to enable Full Disk Access in System Preferences ->
+  Security -> Privacy for the [Jar Launcher](https://stackoverflow.com/a/66762230) or Terminal.app / iTerm.app.
+- Now, you should be able to simply double-click the file to start the program.
+- If that does not work, you may need to type `java -jar JARFILE.jar` into the terminal to run it.
+
+**Linux**
+- `cd` to the download directory and type in `chmod +x JARFILE.jar`.
+- Depending on your specific system, you should be able to double-click the file to start the program.
+- If that does not work, use `java -jar JARFILE.jar` to run it.
+
+## Credits
 
 I started looking into this after I saw 
 [this brilliant answer](https://stackoverflow.com/a/13793043/8868841) 
