@@ -119,7 +119,7 @@ public class BackupFile {
                         throw new BackupReadException("Encrypted file in non-encrypted backup");
 
                     try {
-                        this.backup.manifest.getKeyBag().get().decryptFile(this.protectionClass, this.encryptionKey, this.contentFile, destination);
+                        this.backup.manifest.getKeyBag().get().decryptFile(this.protectionClass, this.encryptionKey, this.contentFile, destination, size);
                     } catch (InvalidKeyException e) {
                         throw new BackupReadException(e);
                     }
