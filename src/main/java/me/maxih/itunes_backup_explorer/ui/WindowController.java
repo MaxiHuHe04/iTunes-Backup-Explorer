@@ -221,4 +221,10 @@ public class WindowController {
             Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage());
         }
     }
+
+    @FXML
+    public void quit() {
+        this.cleanUp();
+        Platform.exit();
+    }
 }

@@ -14,7 +14,7 @@
                     <SeparatorMenuItem mnemonicParsing="false"/>
                     <MenuItem mnemonicParsing="false" onAction="#openPreferences" text="Preferences…"/>
                     <SeparatorMenuItem mnemonicParsing="false"/>
-                    <MenuItem mnemonicParsing="false" text="Quit"/>
+                    <MenuItem mnemonicParsing="false" onAction="#quit" text="Quit"/>
                 </Menu>
                 <Menu disable="true" mnemonicParsing="false" text="Edit">
                     <MenuItem mnemonicParsing="false" text="Undo"/>
