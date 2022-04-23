@@ -109,7 +109,11 @@ public class FilesTabController {
             {
                 itemProperty().addListener((observable, oldValue, newValue) -> {
                     if (newValue == null || newValue.getFile().isEmpty()) return;
-                    setContextMenu(FileActions.getContextMenu(newValue.getFile().get(), splitPane.getScene().getWindow()));
+                    setContextMenu(FileActions.getContextMenu(
+                            newValue.getFile().get(),
+                            splitPane.getScene().getWindow(),
+                            () -> getTreeItem().getParent().getChildren().remove(getTreeItem()))
+                    );
                 });
             }
 

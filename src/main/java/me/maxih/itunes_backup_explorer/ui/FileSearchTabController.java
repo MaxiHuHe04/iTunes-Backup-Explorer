@@ -46,7 +46,11 @@ public class FileSearchTabController {
 
             row.itemProperty().addListener((observable, oldValue, newValue) -> {
                 if (newValue == null || newValue.getFile().isEmpty()) return;
-                row.setContextMenu(FileActions.getContextMenu(newValue.getFile().get(), tableView.getScene().getWindow()));
+                row.setContextMenu(FileActions.getContextMenu(
+                        newValue.getFile().get(),
+                        tableView.getScene().getWindow(),
+                        () -> filesTable.getItems().remove(newValue))
+                );
             });
 
             return row;

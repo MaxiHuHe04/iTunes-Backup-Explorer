@@ -259,11 +259,11 @@ public class ITunesBackup {
         );
     }
 
+    @SuppressWarnings({"SqlResolve", "SqlNoDataSourceInspection"})
     public void updateFileInfo(String fileID, NSDictionary data) throws DatabaseConnectionException {
         if (!databaseConnected()) this.connectToDatabase();
 
         try {
-            //noinspection SqlResolve,SqlNoDataSourceInspection
             PreparedStatement statement = this.databaseCon.prepareStatement("UPDATE Files SET file = ? WHERE fileID = ?");
             byte[] plist = BinaryPropertyListWriter.writeToArray(data);
             statement.setBytes(1, plist);
@@ -274,6 +274,17 @@ public class ITunesBackup {
         }
     }
 
+    @SuppressWarnings({"SqlResolve", "SqlNoDataSourceInspection"})
+    public void removeFileFromDatabase(String fileID) throws DatabaseConnectionException {
+        if (!databaseConnected()) this.connectToDatabase();
+        try {
+            PreparedStatement statement = this.databaseCon.prepareStatement("DELETE FROM Files WHERE fileID = ?");
+            statement.setString(1, fileID);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
     @FunctionalInterface
     private interface StatementPreparation {

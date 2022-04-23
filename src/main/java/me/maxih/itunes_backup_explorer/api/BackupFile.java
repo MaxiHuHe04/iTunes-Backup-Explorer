@@ -170,6 +170,13 @@ public class BackupFile {
         this.backup.updateFileInfo(this.fileID, this.data.dict);
     }
 
+    public void delete() throws IOException, DatabaseConnectionException {
+        if (this.fileType != FileType.FILE) throw new UnsupportedOperationException("Not implemented yet");
+        this.backupOriginal();
+        Files.delete(this.contentFile.toPath());
+        this.backup.removeFileFromDatabase(this.fileID);
+    }
+
     private void backupOriginal() throws IOException {
         File dir = new File(this.backup.directory, "_BackupExplorer");
         if (!dir.isDirectory() && !dir.mkdir())

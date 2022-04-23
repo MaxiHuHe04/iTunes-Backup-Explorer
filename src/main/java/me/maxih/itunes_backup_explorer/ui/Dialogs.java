@@ -40,10 +40,14 @@ public class Dialogs {
         return dialog.showAndWait();
     }
 
-    public static Optional<ButtonType> showAlert(Alert.AlertType type, String message, ButtonType... buttonTypes) {
+    public static Alert getAlert(Alert.AlertType type, String message, ButtonType... buttonTypes) {
         Alert alert = new Alert(type, message, buttonTypes);
         ((Stage) alert.getDialogPane().getScene().getWindow()).getIcons().add(ITunesBackupExplorer.APP_ICON);
-        return alert.showAndWait();
+        return alert;
+    }
+
+    public static Optional<ButtonType> showAlert(Alert.AlertType type, String message, ButtonType... buttonTypes) {
+        return getAlert(type, message, buttonTypes).showAndWait();
     }
 
     public static class ProgressAlert extends Stage {
