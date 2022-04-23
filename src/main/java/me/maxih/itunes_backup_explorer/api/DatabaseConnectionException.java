@@ -6,4 +6,9 @@ public class DatabaseConnectionException extends Exception {
         super("Database connection failed");
     }
 
+    public DatabaseConnectionException(Throwable cause) {
+        this();
+        initCause(cause);
+    }
+
 }

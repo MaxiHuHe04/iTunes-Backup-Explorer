@@ -55,9 +55,14 @@ public class FileSearchTabController {
 
     @FXML
     public void searchFiles() {
-        List<BackupFile> searchResult = selectedBackup.searchFiles(domainQueryField.getText(), relativePathQueryField.getText());
+        try {
+            List<BackupFile> searchResult = selectedBackup.searchFiles(domainQueryField.getText(), relativePathQueryField.getText());
 
-        this.filesTable.setItems(FXCollections.observableList(searchResult.stream().map(BackupFileEntry::new).collect(Collectors.toList())));
+            this.filesTable.setItems(FXCollections.observableList(searchResult.stream().map(BackupFileEntry::new).collect(Collectors.toList())));
+        } catch (DatabaseConnectionException e) {
+            e.printStackTrace();
+            Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage());
+        }
     }
 
     @FXML

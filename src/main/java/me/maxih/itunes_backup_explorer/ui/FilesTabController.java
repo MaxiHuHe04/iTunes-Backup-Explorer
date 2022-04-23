@@ -85,10 +85,10 @@ public class FilesTabController {
                 @Override
                 protected TreeItem<BackupFileEntry> call() {
                     TreeItem<BackupFileEntry> root = new TreeItem<>(new BackupFileEntry(file));
-                    List<BackupFile> result = selectedBackup.queryDomainFiles(false, file.domain);
                     try {
+                        List<BackupFile> result = selectedBackup.queryDomainFiles(false, file.domain);
                         insertAsTree(root, result.stream().map(BackupFileEntry::new).collect(Collectors.toList()));
-                    } catch (BackupReadException e) {
+                    } catch (DatabaseConnectionException | BackupReadException e) {
                         e.printStackTrace();
                     }
 
@@ -221,7 +221,14 @@ public class FilesTabController {
         if (this.loadDomainFilesTask != null) this.loadDomainFilesTask.cancel(true);
         this.filesTreeView.setRoot(null);
 
-        List<BackupFile> domains = backup.queryDomainRoots();
+        List<BackupFile> domains;
+        try {
+            domains = backup.queryDomainRoots();
+        } catch (DatabaseConnectionException e) {
+            e.printStackTrace();
+            Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage());
+            domains = Collections.emptyList();
+        }
 
         TreeItem<BackupFileEntry> root = new TreeItem<>();
 
@@ -297,7 +304,13 @@ public class FilesTabController {
                 .map(file -> file.domain)
                 .toArray(String[]::new);
 
-        List<BackupFile> selectedFiles = selectedBackup.queryDomainFiles(true, selectedDomains);
+        List<BackupFile> selectedFiles = null;
+        try {
+            selectedFiles = selectedBackup.queryDomainFiles(true, selectedDomains);
+        } catch (DatabaseConnectionException e) {
+            e.printStackTrace();
+            Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage());
+        }
 
         Task<Void> extractTask = exportFiles(selectedFiles, destination);
 

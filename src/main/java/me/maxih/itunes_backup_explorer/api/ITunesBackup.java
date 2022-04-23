@@ -149,20 +149,6 @@ public class ITunesBackup {
         }
     }
 
-    public boolean connectToDatabase() {
-        if (decryptedDatabaseFile == null) return false;
-
-        try {
-            databaseCon = DriverManager.getConnection("jdbc:sqlite:" + decryptedDatabaseFile.getCanonicalPath());
-            System.out.println("Connection to the backup database of '" + this.manifest.deviceName + "' has been established.");
-        } catch (SQLException | IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-
-        return true;
-    }
-
     public boolean databaseConnected() {
         try {
             return this.databaseCon != null && !this.databaseCon.isClosed();
@@ -170,6 +156,17 @@ public class ITunesBackup {
             e.printStackTrace();
             this.databaseCon = null;
             return false;
+        }
+    }
+
+    public void connectToDatabase() throws DatabaseConnectionException {
+        if (databaseConnected() || decryptedDatabaseFile == null) return;
+
+        try {
+            databaseCon = DriverManager.getConnection("jdbc:sqlite:" + decryptedDatabaseFile.getCanonicalPath());
+            System.out.println("Connection to the backup database of '" + this.manifest.deviceName + "' has been established.");
+        } catch (SQLException | IOException e) {
+            throw new DatabaseConnectionException(e);
         }
     }
 
@@ -190,8 +187,8 @@ public class ITunesBackup {
             System.out.println("Could not delete temporary file " + this.decryptedDatabaseFile.getAbsolutePath());
     }
 
-    private List<BackupFile> queryFiles(String sql, StatementPreparation preparation) {
-        if (!databaseConnected() && !this.connectToDatabase()) return new ArrayList<>(0);
+    private List<BackupFile> queryFiles(String sql, StatementPreparation preparation) throws DatabaseConnectionException {
+        if (!databaseConnected()) this.connectToDatabase();
 
         try {
             PreparedStatement statement = this.databaseCon.prepareStatement(sql);
@@ -224,7 +221,7 @@ public class ITunesBackup {
         }
     }
 
-    public List<BackupFile> searchFiles(String domainLike, String relativePathLike) {
+    public List<BackupFile> searchFiles(String domainLike, String relativePathLike) throws DatabaseConnectionException {
         return this.queryFiles(
                 "SELECT * FROM files WHERE `domain` LIKE ? AND `relativePath` LIKE ? ESCAPE '\\' ORDER BY `flags`, `domain`, `relativePath`",
                 statement -> {
@@ -234,11 +231,11 @@ public class ITunesBackup {
         );
     }
 
-    public List<BackupFile> queryDomainRoots() {
+    public List<BackupFile> queryDomainRoots() throws DatabaseConnectionException {
         return queryFiles("SELECT * FROM files WHERE `relativePath` = \"\" ORDER BY `domain`", statement -> {});
     }
 
-    public List<BackupFile> queryDomainFiles(boolean withDomainRoot, String... domains) {
+    public List<BackupFile> queryDomainFiles(boolean withDomainRoot, String... domains) throws DatabaseConnectionException {
         if (domains.length == 0) return new ArrayList<>(0);
         return queryFiles(
                 "SELECT * FROM files " +
@@ -252,9 +249,10 @@ public class ITunesBackup {
     }
 
     public void updateFileInfo(String fileID, NSDictionary data) throws DatabaseConnectionException {
-        if (!databaseConnected() && !this.connectToDatabase()) throw new DatabaseConnectionException();
+        if (!databaseConnected()) this.connectToDatabase();
 
         try {
+            //noinspection SqlResolve,SqlNoDataSourceInspection
             PreparedStatement statement = this.databaseCon.prepareStatement("UPDATE Files SET file = ? WHERE fileID = ?");
             byte[] plist = BinaryPropertyListWriter.writeToArray(data);
             statement.setBytes(1, plist);
