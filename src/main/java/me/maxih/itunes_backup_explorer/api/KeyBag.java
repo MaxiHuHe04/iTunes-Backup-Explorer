@@ -216,13 +216,13 @@ public class KeyBag {
         decryptFile(protectionClass, persistentKey, source, destination, -1);
     }
 
-    public InputStream encryptStream(byte[] protectionClass, byte[] persistentKey, InputStream source) throws BackupReadException, UnsupportedCryptoException, NotUnlockedException, InvalidKeyException {
+    public OutputStream encryptStream(byte[] protectionClass, byte[] persistentKey, OutputStream destination) throws BackupReadException, UnsupportedCryptoException, NotUnlockedException, InvalidKeyException {
         byte[] key = this.unwrapKeyForClass(protectionClass, persistentKey);
 
         try {
             Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
             c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(new byte[16]));
-            return new CipherInputStream(source, c);
+            return new CipherOutputStream(destination, c);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException e) {
             throw new UnsupportedCryptoException(e);
         }
@@ -231,12 +231,15 @@ public class KeyBag {
     public void encryptFile(byte[] protectionClass, byte[] persistentKey, File source, File destination) throws BackupReadException, UnsupportedCryptoException, NotUnlockedException, InvalidKeyException, IOException {
         try (
                 BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(source));
-                InputStream encryptStream = encryptStream(protectionClass, persistentKey, inputStream);
 
-                FileOutputStream fileOutputStream = new FileOutputStream(destination);
-                BufferedOutputStream outputStream = new BufferedOutputStream(fileOutputStream)
+                BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(destination));
+                OutputStream encryptStream = encryptStream(protectionClass, persistentKey, outputStream)
         ) {
-            encryptStream.transferTo(outputStream);
+            inputStream.transferTo(encryptStream);
+            long mod = source.length() % 16;
+            if (mod != 0) {
+                encryptStream.write(new byte[16 - (int) mod]);
+            }
         }
     }
 

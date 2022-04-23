@@ -135,6 +135,15 @@ public class ITunesBackup {
         while (new File(dir, backupName + ".bak").exists()) backupName = "Manifest.db." + (++i);
         Files.copy(this.manifestDBFile.toPath(), new File(dir, backupName + ".bak").toPath());
 
+        if (this.databaseConnected()) {
+            try {
+                this.databaseCon.close();
+                this.databaseCon = null;
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
         byte[] manifestKey = new byte[this.manifest.manifestKey.length() - 4];
         ByteBuffer manifestKeyBuffer = ByteBuffer.wrap(this.manifest.manifestKey.bytes());
 
@@ -147,6 +156,8 @@ public class ITunesBackup {
         } catch (FileNotFoundException | InvalidKeyException e) {
             throw new BackupReadException(e);
         }
+
+        connectToDatabase();
     }
 
     public boolean databaseConnected() {
