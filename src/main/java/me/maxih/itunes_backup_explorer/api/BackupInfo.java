@@ -1,14 +1,17 @@
 package me.maxih.itunes_backup_explorer.api;
 
-import com.dd.plist.*;
+import com.dd.plist.NSData;
+import com.dd.plist.NSDictionary;
+import com.dd.plist.NSString;
+import me.maxih.itunes_backup_explorer.util.UtilDict;
 
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.stream.Stream;
 
 public class BackupInfo {
-    private static String getStringOrNull(NSDictionary dict, String key) {
-        return dict.containsKey(key) ? dict.objectForKey(key).toString() : null;
-    }
-
     public final Map<String, ApplicationInfo> applications;
     public final String[] installedApplications;
     public final Date lastBackupDate;
@@ -32,34 +35,42 @@ public class BackupInfo {
     public final String uniqueIdentifier;
 
     public BackupInfo(NSDictionary data) throws BackupReadException {
+        UtilDict dict = new UtilDict(data);
         try {
             this.applications = new HashMap<>();
-            for (Map.Entry<String, NSObject> entry : ((NSDictionary) data.objectForKey("Applications")).entrySet()) {
-                NSDictionary info = (NSDictionary) entry.getValue();
-                boolean isDemotedApp = info.containsKey("IsDemotedApp") && ((NSNumber) info.objectForKey("IsDemotedApp")).boolValue();
-                ApplicationInfo app = new ApplicationInfo((NSData) info.objectForKey("PlaceholderIcon"), (NSData) info.objectForKey("iTunesMetadata"), isDemotedApp, (NSData) info.objectForKey("ApplicationSINF"));
-                this.applications.put(entry.getKey(), app);
-            }
-            this.installedApplications = Arrays.stream(((NSArray) data.objectForKey("Installed Applications")).getArray()).map(NSObject::toString).toArray(String[]::new);
-            this.lastBackupDate = ((NSDate) data.objectForKey("Last Backup Date")).getDate();
-            this.buildVersion = data.objectForKey("Build Version").toString();
-            this.deviceName = data.objectForKey("Device Name").toString();
-            this.displayName = data.objectForKey("Display Name").toString();
-            this.productName = data.objectForKey("Product Name").toString();
-            this.productType = data.objectForKey("Product Type").toString();
-            this.productVersion = data.objectForKey("Product Version").toString();
-            this.serialNumber = data.objectForKey("Serial Number").toString();
+            dict.getDict("Applications").orElseThrow().forTypedEntries(NSDictionary.class, (key, value) -> {
+                UtilDict info = new UtilDict(value);
+                ApplicationInfo app = new ApplicationInfo(
+                        info.getData("PlaceholderIcon").orElseThrow(),
+                        info.getData("iTunesMetadata").orElse(null),
+                        info.getBoolean("IsDemotedApp").orElse(false),
+                        info.getData("ApplicationSINF").orElse(null)
+                );
+                this.applications.put(key, app);
+            });
+            this.installedApplications = dict.getTypedArrayStream(NSString.class, "Installed Applications")
+                    .orElse(Stream.empty())
+                    .map(NSString::getContent)
+                    .toArray(String[]::new);
+            this.lastBackupDate = dict.getDate("Last Backup Date").orElseThrow();
+            this.buildVersion = dict.getString("Build Version").orElseThrow();
+            this.deviceName = dict.getString("Device Name").orElseThrow();
+            this.displayName = dict.getString("Display Name").orElseThrow();
+            this.productName = dict.getString("Product Name").orElseThrow();
+            this.productType = dict.getString("Product Type").orElseThrow();
+            this.productVersion = dict.getString("Product Version").orElseThrow();
+            this.serialNumber = dict.getString("Serial Number").orElseThrow();
 
-            this.phoneNumber = getStringOrNull(data, "Phone Number");
-            this.guid = getStringOrNull(data, "GUID");
-            this.iccid = getStringOrNull(data, "ICCID");
-            this.imei = getStringOrNull(data, "IMEI");
-            this.imei2 = getStringOrNull(data, "IMEI2");
-            this.meid = getStringOrNull(data, "MEID");
-            this.targetIdentifier = getStringOrNull(data, "Target Identifier");
-            this.targetType = getStringOrNull(data, "Target Type");
-            this.uniqueIdentifier = getStringOrNull(data, "Unique Identifier");
-        } catch (Exception e) {
+            this.phoneNumber = dict.getString("Phone Number").orElse(null);
+            this.guid = dict.getString("GUID").orElse(null);
+            this.iccid = dict.getString("ICCID").orElse(null);
+            this.imei = dict.getString("IMEI").orElse(null);
+            this.imei2 = dict.getString("IMEI2").orElse(null);
+            this.meid = dict.getString("MEID").orElse(null);
+            this.targetIdentifier = dict.getString("Target Identifier").orElse(null);
+            this.targetType = dict.getString("Target Type").orElse(null);
+            this.uniqueIdentifier = dict.getString("Unique Identifier").orElse(null);
+        } catch (NoSuchElementException e) {
             throw new BackupReadException(e);
         }
     }

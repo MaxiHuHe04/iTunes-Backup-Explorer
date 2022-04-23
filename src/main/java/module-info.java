@@ -11,4 +11,5 @@ module me.maxih.itunes_backup_explorer {
     exports me.maxih.itunes_backup_explorer;
     exports me.maxih.itunes_backup_explorer.ui;
     exports me.maxih.itunes_backup_explorer.api;
+    exports me.maxih.itunes_backup_explorer.util;
 }

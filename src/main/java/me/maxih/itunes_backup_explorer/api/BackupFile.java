@@ -2,6 +2,7 @@ package me.maxih.itunes_backup_explorer.api;
 
 import com.dd.plist.*;
 import me.maxih.itunes_backup_explorer.util.BackupPathUtils;
+import me.maxih.itunes_backup_explorer.util.UtilDict;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,10 +13,11 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.InvalidKeyException;
+import java.util.NoSuchElementException;
 
 public class BackupFile {
     public final ITunesBackup backup;
-    public final NSDictionary data;
+    public final UtilDict data;
     public final String fileID;
     public final String domain;
     public final String relativePath;
@@ -23,8 +25,8 @@ public class BackupFile {
 
     private final FileType fileType;
 
-    private final NSDictionary properties;
-    private final NSArray objects;
+    private final UtilDict properties;
+    private final NSObject[] objects;
 
     private File contentFile;
 
@@ -34,39 +36,44 @@ public class BackupFile {
 
     public BackupFile(ITunesBackup backup, String fileID, String domain, String relativePath, int flags, NSDictionary data) throws BackupReadException {
         this.backup = backup;
-        this.data = data;
         this.fileID = fileID;
         this.domain = domain;
         this.relativePath = relativePath;
         this.flags = flags;
+        this.data = new UtilDict(data);
 
         this.fileType = FileType.fromFlags(flags);
 
         try {
-            this.objects = (NSArray) this.data.objectForKey("$objects");
-            this.properties = (NSDictionary) getObject((UID) ((NSDictionary) data.objectForKey("$top")).objectForKey("root"));
+            this.objects = this.data.getArray("$objects").orElseThrow();
+            this.properties = new UtilDict(this.getObject(NSDictionary.class, this.data.get(UID.class, "$top", "root").orElseThrow()));
 
             if (this.fileType == FileType.FILE) {
                 this.contentFile = Paths.get(backup.directory.getAbsolutePath(), fileID.substring(0, 2), fileID).toFile();
                 if (!this.contentFile.exists()) throw new BackupReadException("Missing file: " + this.fileID);
 
-                this.size = ((NSNumber) this.properties.objectForKey("Size")).longValue();
-                this.protectionClass = ((NSNumber) this.properties.objectForKey("ProtectionClass")).intValue();
+                this.size = this.properties.get(NSNumber.class, "Size").orElseThrow().longValue();
+                this.protectionClass = this.properties.get(NSNumber.class, "ProtectionClass").orElseThrow().intValue();
 
                 if (this.isEncrypted()) {
                     this.encryptionKey = new byte[40];
                     ByteBuffer encryptionKeyBuffer = ByteBuffer.wrap(this.encryptionKey);
-                    ((NSData) ((NSDictionary) getObject((UID) properties.objectForKey("EncryptionKey"))).objectForKey("NS.data"))
+                    new UtilDict(this.getObject(NSDictionary.class, this.properties.get(UID.class, "EncryptionKey").orElseThrow()))
+                            .getData("NS.data")
+                            .orElseThrow()
                             .getBytes(encryptionKeyBuffer, 4, 40);
                 }
             }
-        } catch (ClassCastException | NullPointerException e) {
+        } catch (NoSuchElementException e) {
             throw new BackupReadException(e);
         }
     }
 
-    private NSObject getObject(UID uid) {
-        return this.objects.getArray()[uid.getBytes()[0]];
+    private <T extends NSObject> T getObject(Class<T> type, UID uid) throws NoSuchElementException {
+        byte index = uid.getBytes()[0];
+        Object obj = this.objects[index];
+        if (type.isInstance(obj)) return type.cast(obj);
+        throw new NoSuchElementException();
     }
 
 
@@ -160,7 +167,7 @@ public class BackupFile {
             Files.copy(newFile.toPath(), this.contentFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
         }
 
-        this.backup.updateFileInfo(this.fileID, this.data);
+        this.backup.updateFileInfo(this.fileID, this.data.dict);
     }
 
     private void backupOriginal() throws IOException {
@@ -175,7 +182,7 @@ public class BackupFile {
             backupName = this.contentFile.getName() + "." + (++i);
         }
 
-        BinaryPropertyListWriter.write(new File(dir, backupName + ".plist"), this.data);
+        BinaryPropertyListWriter.write(new File(dir, backupName + ".plist"), this.data.dict);
         Files.copy(this.contentFile.toPath(), new File(dir, backupName + ".bak").toPath());
     }
 

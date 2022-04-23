@@ -1,11 +1,11 @@
 package me.maxih.itunes_backup_explorer.api;
 
 import com.dd.plist.NSData;
-import com.dd.plist.NSDate;
 import com.dd.plist.NSDictionary;
-import com.dd.plist.NSNumber;
+import me.maxih.itunes_backup_explorer.util.UtilDict;
 
 import java.util.Date;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 public class BackupManifest {
@@ -26,26 +26,26 @@ public class BackupManifest {
     private KeyBag keyBag;
 
     public BackupManifest(NSDictionary data) throws BackupReadException {
+        UtilDict dict = new UtilDict(data);
         try {
-            NSDictionary lockdown = (NSDictionary) data.objectForKey("Lockdown");
+            UtilDict lockdown = dict.getDict("Lockdown").orElseThrow();
 
-            this.encrypted = ((NSNumber) data.objectForKey("IsEncrypted")).boolValue();
-            this.version = data.objectForKey("Version").toString();
-            this.date = ((NSDate) data.objectForKey("Date")).getDate();
-            this.manifestKey = ((NSData) data.objectForKey("ManifestKey"));
-            this.passcodeSet = ((NSNumber) data.objectForKey("WasPasscodeSet")).boolValue();
-            this.productVersion = lockdown.objectForKey("ProductVersion").toString();
-            this.productType = lockdown.objectForKey("ProductType").toString();
-            this.buildVersion = lockdown.objectForKey("BuildVersion").toString();
-            this.uniqueDeviceID = lockdown.objectForKey("UniqueDeviceID").toString();
-            this.serialNumber = lockdown.objectForKey("SerialNumber").toString();
-            this.deviceName = lockdown.objectForKey("DeviceName").toString();
-            this.applications = (NSDictionary) data.objectForKey("Applications");
+            this.encrypted = dict.getBoolean("IsEncrypted").orElseThrow();
+            this.version = dict.getString("Version").orElseThrow();
+            this.date = dict.getDate("Date").orElseThrow();
+            this.manifestKey = dict.getData("ManifestKey").orElseThrow();
+            this.passcodeSet = dict.getBoolean("WasPasscodeSet").orElseThrow();
+            this.productVersion = lockdown.getString("ProductVersion").orElseThrow();
+            this.productType = lockdown.getString("ProductType").orElseThrow();
+            this.buildVersion = lockdown.getString("BuildVersion").orElseThrow();
+            this.uniqueDeviceID = lockdown.getString("UniqueDeviceID").orElseThrow();
+            this.serialNumber = lockdown.getString("SerialNumber").orElseThrow();
+            this.deviceName = lockdown.getString("DeviceName").orElseThrow();
+            this.applications = dict.get(NSDictionary.class, "Applications").orElseThrow();
             if (this.encrypted) {
-                this.keyBag = new KeyBag((NSData) data.objectForKey("BackupKeyBag"));
+                this.keyBag = new KeyBag(dict.getData("BackupKeyBag").orElseThrow());
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (NoSuchElementException e) {
             throw new BackupReadException(e);
         }
     }
