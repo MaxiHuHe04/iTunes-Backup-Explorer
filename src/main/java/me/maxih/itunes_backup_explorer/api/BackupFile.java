@@ -50,7 +50,7 @@ public class BackupFile {
 
             if (this.fileType == FileType.FILE) {
                 this.contentFile = Paths.get(backup.directory.getAbsolutePath(), fileID.substring(0, 2), fileID).toFile();
-                if (!this.contentFile.exists()) throw new BackupReadException("Missing file: " + this.fileID);
+                if (!this.contentFile.exists()) throw new BackupReadException("Missing file: " + this.fileID + " in " + domain + " (" + relativePath + ")");
 
                 this.size = this.properties.get(NSNumber.class, "Size").orElseThrow().longValue();
                 this.protectionClass = this.properties.get(NSNumber.class, "ProtectionClass").orElseThrow().intValue();

@@ -210,7 +210,9 @@ public class ITunesBackup {
                             result.getInt(4),
                             (NSDictionary) PropertyListParser.parse(result.getBinaryStream(5))
                     ));
-                } catch (IOException | PropertyListFormatException | ParseException | ParserConfigurationException | SAXException | BackupReadException e) {
+                } catch (BackupReadException e) {
+                    System.err.println(e.getMessage());
+                } catch (IOException | PropertyListFormatException | ParseException | ParserConfigurationException | SAXException e) {
                     e.printStackTrace();
                 }
             }
