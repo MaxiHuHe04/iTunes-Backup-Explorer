@@ -1,5 +1,6 @@
 package me.maxih.itunes_backup_explorer.ui;
 
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -10,6 +11,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import me.maxih.itunes_backup_explorer.ITunesBackupExplorer;
@@ -18,11 +20,10 @@ import me.maxih.itunes_backup_explorer.api.ITunesBackup;
 import me.maxih.itunes_backup_explorer.api.NotUnlockedException;
 import me.maxih.itunes_backup_explorer.api.UnsupportedCryptoException;
 
-import java.awt.Desktop;
+import java.awt.*;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -71,6 +72,7 @@ public class WindowController {
             else if (tabPage == this.fileSearchTabPage) this.fileSearchTabPageController.tabShown(this.selectedBackup);
         });
 
+        this.tabPane.setVisible(false);
         this.loadBackups();
     }
 
@@ -78,36 +80,51 @@ public class WindowController {
         this.backups.forEach(ITunesBackup::cleanUp);
     }
 
+    public void loadBackup(ITunesBackup backup) {
+        ToggleButton backupEntry = new ToggleButton(backup.manifest.deviceName + "\n" + BACKUP_DATE_FMT.format(backup.manifest.date));
+        backupEntry.getStyleClass().add("sidebar-button");
+        backupEntry.setOnAction(this::backupSelected);
+        backupEntry.setMaxWidth(Integer.MAX_VALUE);
+        backupEntry.setPrefHeight(60);
+        backupEntry.setId(backup.directory.getName());
+
+        MenuItem openBackupDirectory = new MenuItem("Open backup directory");
+        openBackupDirectory.setOnAction(event -> {
+            try {
+                Desktop.getDesktop().browse(backup.directory.toURI());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+
+        MenuItem closeBackup = new MenuItem("Close backup");
+        closeBackup.setOnAction(event -> {
+            backup.cleanUp();
+            if (this.selectedBackup == backup) {
+                this.selectedBackup = null;
+                this.tabPane.setVisible(false);
+            }
+            this.backups.remove(backup);
+            this.backupSidebarBox.getChildren().remove(backupEntry);
+            this.sidebarButtons.remove(backup);
+        });
+
+        ContextMenu backupContextMenu = new ContextMenu(openBackupDirectory, closeBackup);
+        backupEntry.setContextMenu(backupContextMenu);
+
+        this.backups.add(backup);
+        this.backupSidebarBox.getChildren().add(backupEntry);
+        this.sidebarButtons.put(backup, backupEntry);
+    }
+
     public void loadBackups() {
         this.backupSidebarBox.getChildren().clear();
-        this.backups = new ArrayList<>();
+        this.backups.clear();
         for (String root : PreferencesController.getBackupRoots()) {
-            this.backups.addAll(ITunesBackup.getBackups(new File(root)));
+            ITunesBackup.getBackups(new File(root)).forEach(this::loadBackup);
         }
-        this.backups.forEach(backup -> {
-            ToggleButton backupEntry = new ToggleButton(backup.manifest.deviceName + "\n" + BACKUP_DATE_FMT.format(backup.manifest.date));
-            backupEntry.getStyleClass().add("sidebar-button");
-            backupEntry.setOnAction(this::backupSelected);
-            backupEntry.setMaxWidth(Integer.MAX_VALUE);
-            backupEntry.setPrefHeight(60);
-            backupEntry.setId(backup.directory.getName());
 
-            MenuItem openBackupDirectory = new MenuItem("Open backup directory");
-            openBackupDirectory.setOnAction(event -> {
-                try {
-                    Desktop.getDesktop().browse(backup.directory.toURI());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            });
-            ContextMenu backupContextMenu = new ContextMenu(openBackupDirectory);
-            backupEntry.setContextMenu(backupContextMenu);
-
-            this.backupSidebarBox.getChildren().add(backupEntry);
-
-            this.sidebarButtons.put(backup, backupEntry);
-            if (backup == this.backups.get(0)) selectBackup(backup);
-        });
+        this.backups.stream().findFirst().ifPresent(this::selectBackup);
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
@@ -138,10 +155,10 @@ public class WindowController {
     }
 
     public void selectBackup(ITunesBackup backup) {
+        this.sidebarButtons.get(backup).setSelected(true);
         if (backup == this.selectedBackup) return;
 
         if (selectedBackup != null) sidebarButtons.get(selectedBackup).setSelected(false);
-        this.sidebarButtons.get(backup).setSelected(true);
         this.selectedBackup = backup;
 
         this.infoTabPageController.updateInformation(backup.manifest);
@@ -150,6 +167,7 @@ public class WindowController {
         if (this.lockedTabPages.contains(selectedTabPage) && !this.tryUnlock()) this.tabPane.getSelectionModel().select(0);
         else if (selectedTabPage == this.filesTabPage) this.filesTabPageController.tabShown(backup);
         else if (selectedTabPage == this.fileSearchTabPage) this.fileSearchTabPageController.tabShown(backup);
+        this.tabPane.setVisible(true);
     }
 
     @FXML
@@ -182,6 +200,24 @@ public class WindowController {
             prefsWindow.show();
         } catch (IOException e) {
             e.printStackTrace();
+            Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage());
+        }
+    }
+
+    @FXML
+    public void fileOpenBackup() {
+        FileChooser chooser = new FileChooser();
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("iTunes Backup", "Manifest.plist", "Manifest.db"));
+        File source = chooser.showOpenDialog(tabPane.getScene().getWindow());
+        if (source == null) return;
+
+        try {
+            ITunesBackup backup = new ITunesBackup(source.getParentFile());
+            this.loadBackup(backup);
+            this.selectBackup(backup);
+        } catch (FileNotFoundException e) {
+            Dialogs.showAlert(Alert.AlertType.ERROR, "The following file was not found: " + e.getMessage());
+        } catch (BackupReadException e) {
             Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage());
         }
     }

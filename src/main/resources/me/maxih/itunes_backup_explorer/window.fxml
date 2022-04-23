@@ -10,7 +10,7 @@
         <top>
             <MenuBar BorderPane.alignment="CENTER">
                 <Menu mnemonicParsing="false" text="File">
-                    <MenuItem disable="true" mnemonicParsing="false" text="Load backup…"/>
+                    <MenuItem mnemonicParsing="false" onAction="#fileOpenBackup" text="Open backup…"/>
                     <SeparatorMenuItem mnemonicParsing="false"/>
                     <MenuItem mnemonicParsing="false" onAction="#openPreferences" text="Preferences…"/>
                     <SeparatorMenuItem mnemonicParsing="false"/>

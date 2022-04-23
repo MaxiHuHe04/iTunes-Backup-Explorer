@@ -79,6 +79,7 @@ public class ITunesBackup {
     private void loadManifest() throws BackupReadException {
         try {
             this.manifestPList = (NSDictionary) PropertyListParser.parse(manifestPListFile);
+            if (this.manifestPList == null) throw new BackupReadException("Manifest.plist could not be read");
             this.manifest = new BackupManifest(manifestPList);
         } catch (Exception e) {
             throw new BackupReadException(e);
