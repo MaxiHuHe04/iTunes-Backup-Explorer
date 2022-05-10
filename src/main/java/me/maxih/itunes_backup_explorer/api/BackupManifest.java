@@ -33,7 +33,11 @@ public class BackupManifest {
             this.encrypted = dict.getBoolean("IsEncrypted").orElseThrow();
             this.version = dict.getString("Version").orElseThrow();
             this.date = dict.getDate("Date").orElseThrow();
-            this.manifestKey = dict.getData("ManifestKey").orElseThrow();
+            if (this.encrypted) {
+                this.manifestKey = dict.getData("ManifestKey").orElseThrow();
+            } else {
+                this.manifestKey = null;
+            }
             this.passcodeSet = dict.getBoolean("WasPasscodeSet").orElseThrow();
             this.productVersion = lockdown.getString("ProductVersion").orElseThrow();
             this.productType = lockdown.getString("ProductType").orElseThrow();
