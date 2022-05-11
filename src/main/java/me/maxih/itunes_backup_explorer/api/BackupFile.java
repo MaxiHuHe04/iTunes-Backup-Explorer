@@ -55,7 +55,7 @@ public class BackupFile {
                 this.size = this.properties.get(NSNumber.class, "Size").orElseThrow().longValue();
                 this.protectionClass = this.properties.get(NSNumber.class, "ProtectionClass").orElseThrow().intValue();
 
-                if (backup.manifest.encrypted) {
+                if (this.isEncrypted()) {
                     this.encryptionKey = new byte[40];
                     ByteBuffer encryptionKeyBuffer = ByteBuffer.wrap(this.encryptionKey);
                     new UtilDict(this.getObject(NSDictionary.class, this.properties.get(UID.class, "EncryptionKey").orElseThrow()))
@@ -89,6 +89,10 @@ public class BackupFile {
         return size;
     }
 
+    public boolean isEncrypted() {
+        return backup.manifest.encrypted;
+    }
+
     public String getFileName() {
         return BackupPathUtils.getFileName(this.relativePath);
     }
@@ -110,7 +114,7 @@ public class BackupFile {
                 if (!destination.exists()) Files.createDirectory(destination.toPath());
                 break;
             case FILE:
-                if (backup.manifest.encrypted) {
+                if (this.isEncrypted()) {
                     if (this.backup.manifest.getKeyBag().isEmpty())
                         throw new BackupReadException("Encrypted file in non-encrypted backup");
 
@@ -150,7 +154,7 @@ public class BackupFile {
         this.backupOriginal();
         this.size = newFileAttributes.size();
         this.properties.put("Size", this.size);
-        if (backup.manifest.encrypted) {
+        if (this.isEncrypted()) {
             if (this.backup.manifest.getKeyBag().isEmpty())
                 throw new BackupReadException("Encrypted file in non-encrypted backup");
 
