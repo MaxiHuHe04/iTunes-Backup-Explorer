@@ -125,7 +125,7 @@ public class BackupFile {
                         throw new BackupReadException(e);
                     }
                 } else {
-                    Files.copy(this.contentFile.toPath(), destination.toPath());
+                    Files.copy(this.contentFile.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 }
                 break;
             case SYMBOLIC_LINK:
