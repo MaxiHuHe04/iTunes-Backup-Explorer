@@ -7,7 +7,10 @@ import me.maxih.itunes_backup_explorer.util.UtilDict;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.*;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.InvalidKeyException;
 import java.util.NoSuchElementException;
@@ -48,7 +51,8 @@ public class BackupFile {
 
             if (this.fileType == FileType.FILE) {
                 this.contentFile = Paths.get(backup.directory.getAbsolutePath(), fileID.substring(0, 2), fileID).toFile();
-                if (!this.contentFile.exists()) throw new BackupReadException("Missing file: " + this.fileID + " in " + domain + " (" + relativePath + ")");
+                if (!this.contentFile.exists())
+                    throw new BackupReadException("Missing file: " + this.fileID + " in " + domain + " (" + relativePath + ")");
 
                 this.size = this.properties.get(NSNumber.class, "Size").orElseThrow().longValue();
                 this.protectionClass = this.properties.get(NSNumber.class, "ProtectionClass").orElseThrow().intValue();
@@ -124,8 +128,15 @@ public class BackupFile {
                     } catch (InvalidKeyException e) {
                         throw new BackupReadException(e);
                     }
+
+                    //noinspection ResultOfMethodCallIgnored
+                    this.properties.get(NSNumber.class, "LastModified")
+                            .map(NSNumber::longValue)
+                            .map(seconds -> seconds * 1000)
+                            .ifPresent(destination::setLastModified);
                 } else {
-                    Files.copy(this.contentFile.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    Files.copy(this.contentFile.toPath(), destination.toPath(),
+                            StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
                 }
                 break;
             case SYMBOLIC_LINK:
