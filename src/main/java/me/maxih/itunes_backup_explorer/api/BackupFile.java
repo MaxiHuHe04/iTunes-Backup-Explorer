@@ -90,7 +90,7 @@ public class BackupFile {
     }
 
     public boolean isEncrypted() {
-        return this.protectionClass != 0;
+        return backup.manifest.encrypted;
     }
 
     public String getFileName() {
