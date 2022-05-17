@@ -10,8 +10,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.security.InvalidKeyException;
 import java.sql.*;
@@ -104,16 +102,9 @@ public class ITunesBackup {
     public void decryptDatabase() throws BackupReadException, IOException, UnsupportedCryptoException, NotUnlockedException {
         if (!this.manifest.encrypted || this.manifest.getKeyBag().isEmpty()) return;
 
-        byte[] manifestKey = new byte[this.manifest.manifestKey.length() - 4];
-        ByteBuffer manifestKeyBuffer = ByteBuffer.wrap(this.manifest.manifestKey.bytes());
-
-        int manifestClass = manifestKeyBuffer.order(ByteOrder.LITTLE_ENDIAN).getInt();
-
-        manifestKeyBuffer.order(ByteOrder.BIG_ENDIAN).get(manifestKey);
-
         try {
             this.decryptedDatabaseFile = File.createTempFile("decrypted-manifest", ".sqlite3");
-            this.manifest.getKeyBag().get().decryptFile(manifestClass, manifestKey, this.manifestDBFile, this.decryptedDatabaseFile);
+            this.manifest.getKeyBag().get().decryptFile(manifest.protectionClass, manifest.getManifestKey().orElseThrow(), this.manifestDBFile, this.decryptedDatabaseFile);
         } catch (FileNotFoundException | InvalidKeyException e) {
             throw new BackupReadException(e);
         }
@@ -144,15 +135,8 @@ public class ITunesBackup {
             }
         }
 
-        byte[] manifestKey = new byte[this.manifest.manifestKey.length() - 4];
-        ByteBuffer manifestKeyBuffer = ByteBuffer.wrap(this.manifest.manifestKey.bytes());
-
-        int manifestClass = manifestKeyBuffer.order(ByteOrder.LITTLE_ENDIAN).getInt();
-
-        manifestKeyBuffer.order(ByteOrder.BIG_ENDIAN).get(manifestKey);
-
         try {
-            this.manifest.getKeyBag().get().encryptFile(manifestClass, manifestKey, this.decryptedDatabaseFile, this.manifestDBFile);
+            this.manifest.getKeyBag().get().encryptFile(manifest.protectionClass, manifest.getManifestKey().orElseThrow(), this.decryptedDatabaseFile, this.manifestDBFile);
         } catch (FileNotFoundException | InvalidKeyException e) {
             throw new BackupReadException(e);
         }
