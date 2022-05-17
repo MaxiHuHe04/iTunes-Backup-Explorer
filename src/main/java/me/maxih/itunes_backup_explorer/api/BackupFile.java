@@ -7,13 +7,11 @@ import me.maxih.itunes_backup_explorer.util.UtilDict;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.InvalidKeyException;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 public class BackupFile {
     public final ITunesBackup backup;
@@ -55,13 +53,16 @@ public class BackupFile {
                 this.size = this.properties.get(NSNumber.class, "Size").orElseThrow().longValue();
                 this.protectionClass = this.properties.get(NSNumber.class, "ProtectionClass").orElseThrow().intValue();
 
-                if (this.isEncrypted()) {
+                Optional<UID> encryptionKeyUID = this.properties.get(UID.class, "EncryptionKey");
+                if (encryptionKeyUID.isPresent()) {
                     this.encryptionKey = new byte[40];
                     ByteBuffer encryptionKeyBuffer = ByteBuffer.wrap(this.encryptionKey);
-                    new UtilDict(this.getObject(NSDictionary.class, this.properties.get(UID.class, "EncryptionKey").orElseThrow()))
+                    new UtilDict(this.getObject(NSDictionary.class, encryptionKeyUID.get()))
                             .getData("NS.data")
                             .orElseThrow()
                             .getBytes(encryptionKeyBuffer, 4, 40);
+                } else {
+                    this.encryptionKey = null;
                 }
             }
         } catch (NoSuchElementException e) {
@@ -90,7 +91,7 @@ public class BackupFile {
     }
 
     public boolean isEncrypted() {
-        return backup.manifest.encrypted;
+        return this.encryptionKey != null;
     }
 
     public String getFileName() {
