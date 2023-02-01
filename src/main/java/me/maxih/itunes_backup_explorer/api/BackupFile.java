@@ -20,6 +20,7 @@ public class BackupFile {
     public final String domain;
     public final String relativePath;
     public final int flags;
+    private final String invalid = "[:*?\"<>|]";
 
     private final FileType fileType;
 
@@ -137,15 +138,25 @@ public class BackupFile {
     public void extractToFolder(File destinationFolder, boolean withRelativePath)
             throws IOException, BackupReadException, NotUnlockedException, UnsupportedCryptoException, UnsupportedOperationException {
 
-        String relative = withRelativePath ? Paths.get(this.domain, this.relativePath).toString() : this.getFileName();
-        File destination = new File(destinationFolder.getAbsolutePath(), relative);
-        if (destination.exists() && this.fileType != FileType.DIRECTORY)
-            throw new FileAlreadyExistsException(destination.getAbsolutePath());
+        try {
+            String relative = withRelativePath ? Paths.get(this.domain, cleanPath(this.relativePath)).toString() : cleanPath(this.getFileName());
+            File destination = new File(destinationFolder.getAbsolutePath(), relative);
 
-        Files.createDirectories(destination.getParentFile().toPath());
+            if (destination.exists() && this.fileType != FileType.DIRECTORY)
+                throw new FileAlreadyExistsException(destination.getAbsolutePath());
+    
+            Files.createDirectories(destination.getParentFile().toPath());
+            this.extract(destination);
+        } catch (InvalidPathException e) {
+            throw new IOException("Invalid path to write (possibly invalid characters in filename)");
+        }
 
-        this.extract(destination);
+    }
 
+    public String cleanPath(String path)
+    {
+        // ignore first two characters (drive letter uses :), replace any invalid 
+        return path.substring(0,2) + path.substring(2).replaceAll(invalid, "-");
     }
 
     public void replaceWith(File newFile) throws IOException, BackupReadException, UnsupportedCryptoException, NotUnlockedException, DatabaseConnectionException {
