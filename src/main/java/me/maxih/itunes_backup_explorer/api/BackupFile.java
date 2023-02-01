@@ -20,7 +20,6 @@ public class BackupFile {
     public final String domain;
     public final String relativePath;
     public final int flags;
-    private final String invalid = "[:*?\"<>|]";
 
     private final FileType fileType;
 
@@ -138,25 +137,33 @@ public class BackupFile {
     public void extractToFolder(File destinationFolder, boolean withRelativePath)
             throws IOException, BackupReadException, NotUnlockedException, UnsupportedCryptoException, UnsupportedOperationException {
 
-        try {
-            String relative = withRelativePath ? Paths.get(this.domain, cleanPath(this.relativePath)).toString() : cleanPath(this.getFileName());
-            File destination = new File(destinationFolder.getAbsolutePath(), relative);
+        String relative;
 
-            if (destination.exists() && this.fileType != FileType.DIRECTORY)
-                throw new FileAlreadyExistsException(destination.getAbsolutePath());
-    
-            Files.createDirectories(destination.getParentFile().toPath());
-            this.extract(destination);
+        try {
+            relative = withRelativePath ? Paths.get(this.domain, this.relativePath).toString() : this.getFileName();
         } catch (InvalidPathException e) {
-            throw new IOException("Invalid path to write (possibly invalid characters in filename)");
+            e.printStackTrace();
+            try {
+                relative = withRelativePath ? Paths.get(this.domain, cleanPath(this.relativePath)).toString() : cleanPath(this.getFileName());
+                System.out.println("Continuing with invalid characters replaced: " + this.getFileName() + " -> " + relative);
+            } catch (InvalidPathException f) {
+                f.printStackTrace();
+                throw new IOException("Invalid character in filename, failed to replace");
+            }
+
         }
+        File destination = new File(destinationFolder.getAbsolutePath(), relative);
+        if (destination.exists() && this.fileType != FileType.DIRECTORY)
+            throw new FileAlreadyExistsException(destination.getAbsolutePath());
+        Files.createDirectories(destination.getParentFile().toPath());
+        this.extract(destination);
 
     }
 
     public String cleanPath(String path)
     {
-        // ignore first two characters (drive letter uses :), replace any invalid 
-        return path.substring(0,2) + path.substring(2).replaceAll(invalid, "-");
+        final String invalid = "[:*?\"<>|]";
+        return path.replaceAll(invalid, "-");
     }
 
     public void replaceWith(File newFile) throws IOException, BackupReadException, UnsupportedCryptoException, NotUnlockedException, DatabaseConnectionException {
