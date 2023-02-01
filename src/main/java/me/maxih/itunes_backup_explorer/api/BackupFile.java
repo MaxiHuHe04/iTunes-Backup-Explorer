@@ -142,28 +142,21 @@ public class BackupFile {
         try {
             relative = withRelativePath ? Paths.get(this.domain, this.relativePath).toString() : this.getFileName();
         } catch (InvalidPathException e) {
-            e.printStackTrace();
             try {
-                relative = withRelativePath ? Paths.get(this.domain, cleanPath(this.relativePath)).toString() : cleanPath(this.getFileName());
+                relative = withRelativePath
+                        ? Paths.get(this.domain, BackupPathUtils.cleanPath(this.relativePath)).toString()
+                        : BackupPathUtils.cleanPath(this.getFileName());
                 System.out.println("Continuing with invalid characters replaced: " + this.getFileName() + " -> " + relative);
-            } catch (InvalidPathException f) {
-                f.printStackTrace();
-                throw new IOException("Invalid character in filename, failed to replace");
+            } catch (InvalidPathException e1) {
+                throw new IOException("Invalid character in filename, failed to replace", e1);
             }
-
         }
         File destination = new File(destinationFolder.getAbsolutePath(), relative);
         if (destination.exists() && this.fileType != FileType.DIRECTORY)
             throw new FileAlreadyExistsException(destination.getAbsolutePath());
+
         Files.createDirectories(destination.getParentFile().toPath());
         this.extract(destination);
-
-    }
-
-    public String cleanPath(String path)
-    {
-        final String invalid = "[:*?\"<>|]";
-        return path.replaceAll(invalid, "-");
     }
 
     public void replaceWith(File newFile) throws IOException, BackupReadException, UnsupportedCryptoException, NotUnlockedException, DatabaseConnectionException {
