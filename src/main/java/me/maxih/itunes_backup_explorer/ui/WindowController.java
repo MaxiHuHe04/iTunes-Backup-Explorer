@@ -84,7 +84,8 @@ public class WindowController {
     }
 
     public void loadBackup(ITunesBackup backup) {
-        ToggleButton backupEntry = new ToggleButton(backup.manifest.deviceName + "\n" + BACKUP_DATE_FMT.format(backup.manifest.date));
+        ToggleButton backupEntry = new ToggleButton(backup.manifest.deviceName + "\n" + BACKUP_DATE_FMT.format(
+                backup.getBackupInfo().map(info -> info.lastBackupDate).orElse(backup.manifest.date)));
         backupEntry.getStyleClass().add("sidebar-button");
         backupEntry.setOnAction(this::backupSelected);
         backupEntry.setMaxWidth(Integer.MAX_VALUE);
