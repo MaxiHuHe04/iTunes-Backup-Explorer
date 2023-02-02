@@ -1,8 +1,11 @@
 package me.maxih.itunes_backup_explorer.util;
 
+import java.util.regex.Pattern;
+
 public class BackupPathUtils {
 
     public static final char SEPARATOR = '/';
+    private static final Pattern INVALID_CHARACTERS = Pattern.compile("[:*?\"<>|]");
 
     public static String getParentPath(String path) {
         int lastSep = path.lastIndexOf(SEPARATOR);
@@ -32,6 +35,10 @@ public class BackupPathUtils {
         int lastSep = name.lastIndexOf('.');
         if (lastSep == -1) return "";
         else return name.substring(lastSep + 1);
+    }
+
+    public static String cleanPath(String path) {
+        return INVALID_CHARACTERS.matcher(path).replaceAll("-");
     }
 
     private BackupPathUtils() {
