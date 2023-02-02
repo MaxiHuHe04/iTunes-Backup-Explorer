@@ -48,7 +48,8 @@ public class ITunesBackup {
     public File backupInfoFile;
     public NSDictionary manifestPList;
     public BackupManifest manifest;
-    public BackupInfo backupInfo;
+
+    private BackupInfo backupInfo = null;
 
     public File decryptedDatabaseFile;
     private Connection databaseCon;
@@ -63,10 +64,18 @@ public class ITunesBackup {
 
         if (!manifestDBFile.exists()) throw new FileNotFoundException(manifestDBFile.getAbsolutePath());
         if (!manifestPListFile.exists()) throw new FileNotFoundException(manifestPListFile.getAbsolutePath());
-        if (!backupInfoFile.exists()) throw new FileNotFoundException(backupInfoFile.getAbsolutePath());
 
         this.loadManifest();
-        this.loadInfo();
+
+        if (backupInfoFile.exists()) {
+            try {
+                this.loadInfo();
+            } catch (BackupReadException e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("The file '" + this.backupInfoFile.getAbsolutePath() + "' was not found. Trying to load the backup anyway.");
+        }
 
         if (this.manifest.encrypted && this.manifest.getKeyBag().isEmpty())
             throw new BackupReadException("Backup is encrypted but no key bag was found");
@@ -91,6 +100,10 @@ public class ITunesBackup {
         } catch (Exception e) {
             throw new BackupReadException(e);
         }
+    }
+
+    public Optional<BackupInfo> getBackupInfo() {
+        return Optional.ofNullable(this.backupInfo);
     }
 
     public boolean isLocked() {

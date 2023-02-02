@@ -43,8 +43,8 @@ public class BackupFileEntry {
         this.pathLevel = BackupPathUtils.getPathLevel(file.relativePath);
 
         String appID = file.domain.startsWith("AppDomain-") ? file.domain.substring("AppDomain-".length()) : null;
-        if (file.relativePath.equals("") && appID != null && file.backup.backupInfo.applications.containsKey(appID)) {
-            byte[] imageData = file.backup.backupInfo.applications.get(appID).placeholderIcon.bytes();
+        if (file.relativePath.equals("") && appID != null && file.backup.getBackupInfo().map(info -> info.applications.containsKey(appID)).orElse(false)) {
+            byte[] imageData = file.backup.getBackupInfo().get().applications.get(appID).placeholderIcon.bytes();
             ByteArrayInputStream imageStream = new ByteArrayInputStream(imageData);
             this.icon = new Image(imageStream);
         } else {

@@ -15,15 +15,15 @@ public class BackupInfo {
     public final Map<String, ApplicationInfo> applications;
     public final String[] installedApplications;
     public final Date lastBackupDate;
-    public final String buildVersion;
     public final String deviceName;
+    public final String serialNumber;
+
+    // Fields below can be null
     public final String displayName;
     public final String productName;
     public final String productType;
     public final String productVersion;
-    public final String serialNumber;
-
-    // Fields below can be null
+    public final String buildVersion;
     public final String phoneNumber;
     public final String guid;
     public final String iccid;
@@ -53,14 +53,14 @@ public class BackupInfo {
                     .map(NSString::getContent)
                     .toArray(String[]::new);
             this.lastBackupDate = dict.getDate("Last Backup Date").orElseThrow();
-            this.buildVersion = dict.getString("Build Version").orElseThrow();
             this.deviceName = dict.getString("Device Name").orElseThrow();
-            this.displayName = dict.getString("Display Name").orElseThrow();
-            this.productName = dict.getString("Product Name").orElseThrow();
-            this.productType = dict.getString("Product Type").orElseThrow();
-            this.productVersion = dict.getString("Product Version").orElseThrow();
             this.serialNumber = dict.getString("Serial Number").orElseThrow();
 
+            this.displayName = dict.getString("Display Name").orElse(null);
+            this.productName = dict.getString("Product Name").orElse(null);
+            this.productType = dict.getString("Product Type").orElse(null);
+            this.productVersion = dict.getString("Product Version").orElse(null);
+            this.buildVersion = dict.getString("Build Version").orElse(null);
             this.phoneNumber = dict.getString("Phone Number").orElse(null);
             this.guid = dict.getString("GUID").orElse(null);
             this.iccid = dict.getString("ICCID").orElse(null);
