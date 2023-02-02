@@ -4,6 +4,8 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -67,7 +69,8 @@ public class WindowController {
 
         this.tabPane.getSelectionModel().selectedItemProperty().addListener((observable, oldTab, newTab) -> {
             Node tabPage = newTab.getContent();
-            if (this.lockedTabPages.contains(tabPage) && !this.tryUnlock()) this.tabPane.getSelectionModel().select(oldTab);
+            if (this.lockedTabPages.contains(tabPage) && !this.tryUnlock())
+                this.tabPane.getSelectionModel().select(oldTab);
             else if (tabPage == this.filesTabPage) this.filesTabPageController.tabShown(this.selectedBackup);
             else if (tabPage == this.fileSearchTabPage) this.fileSearchTabPageController.tabShown(this.selectedBackup);
         });
@@ -86,6 +89,8 @@ public class WindowController {
         backupEntry.setOnAction(this::backupSelected);
         backupEntry.setMaxWidth(Integer.MAX_VALUE);
         backupEntry.setPrefHeight(60);
+        backupEntry.setAlignment(Pos.BASELINE_LEFT);
+        backupEntry.setPadding(new Insets(0, 24, 0, 24));  // top right bottom left
         backupEntry.setId(backup.directory.getName());
 
         MenuItem openBackupDirectory = new MenuItem("Open backup directory");
@@ -164,7 +169,8 @@ public class WindowController {
         this.infoTabPageController.updateInformation(backup.manifest);
 
         Node selectedTabPage = this.tabPane.getSelectionModel().getSelectedItem().getContent();
-        if (this.lockedTabPages.contains(selectedTabPage) && !this.tryUnlock()) this.tabPane.getSelectionModel().select(0);
+        if (this.lockedTabPages.contains(selectedTabPage) && !this.tryUnlock())
+            this.tabPane.getSelectionModel().select(0);
         else if (selectedTabPage == this.filesTabPage) this.filesTabPageController.tabShown(backup);
         else if (selectedTabPage == this.fileSearchTabPage) this.fileSearchTabPageController.tabShown(backup);
         this.tabPane.setVisible(true);
