@@ -167,7 +167,7 @@ public class WindowController {
         if (selectedBackup != null) sidebarButtons.get(selectedBackup).setSelected(false);
         this.selectedBackup = backup;
 
-        this.infoTabPageController.updateInformation(backup.manifest);
+        this.infoTabPageController.updateInformation(backup.manifest, backup.getBackupInfo().orElse(null));
 
         Node selectedTabPage = this.tabPane.getSelectionModel().getSelectedItem().getContent();
         if (this.lockedTabPages.contains(selectedTabPage) && !this.tryUnlock())

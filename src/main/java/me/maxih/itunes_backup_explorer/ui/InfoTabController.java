@@ -3,6 +3,7 @@ package me.maxih.itunes_backup_explorer.ui;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import me.maxih.itunes_backup_explorer.api.BackupInfo;
 import me.maxih.itunes_backup_explorer.api.BackupManifest;
 
 public class InfoTabController {
@@ -14,6 +15,8 @@ public class InfoTabController {
     @FXML
     private TextField infoUUID;
     @FXML
+    private TextField infoPhoneNumber;
+    @FXML
     private Label infoProductType;
     @FXML
     private Label infoProductVersion;
@@ -24,9 +27,11 @@ public class InfoTabController {
     @FXML
     private Label infoVersion;
     @FXML
-    private Label infoDate;
+    private Label infoCreationDate;
+    @FXML
+    private Label infoLastDate;
 
-    public void updateInformation(BackupManifest manifest) {
+    public void updateInformation(BackupManifest manifest, BackupInfo info) {
         this.infoDeviceName.setText(manifest.deviceName);
         this.infoSerialNumber.setText(manifest.serialNumber);
         this.infoUUID.setText(manifest.uniqueDeviceID);
@@ -35,7 +40,14 @@ public class InfoTabController {
         this.infoBuildVersion.setText(manifest.buildVersion);
         this.infoEncrypted.setText(manifest.encrypted ? "yes" : "no");
         this.infoVersion.setText(manifest.version);
-        this.infoDate.setText(manifest.date.toString());
+        this.infoCreationDate.setText(manifest.date.toString());
+        if (info == null) {
+            this.infoPhoneNumber.setText("");
+            this.infoLastDate.setText("Unknown");
+        } else {
+            this.infoPhoneNumber.setText(info.phoneNumber == null ? "" : info.phoneNumber);
+            this.infoLastDate.setText(info.lastBackupDate.toString());
+        }
     }
 
 }
