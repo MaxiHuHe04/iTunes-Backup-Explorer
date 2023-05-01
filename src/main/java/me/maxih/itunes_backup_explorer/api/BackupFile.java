@@ -190,10 +190,23 @@ public class BackupFile {
         this.backup.updateFileInfo(this.fileID, this.data.dict);
     }
 
+    /**
+     * Removes this backup file from the database and
+     * deletes the content file if there is one.<br>
+     * Important: This does not remove directories recursively,
+     * so child nodes could be left without a parent.
+     * @throws IOException if the content file could not be deleted
+     * @throws DatabaseConnectionException if the database connection failed
+     */
     public void delete() throws IOException, DatabaseConnectionException {
-        if (this.fileType != FileType.FILE) throw new UnsupportedOperationException("Not implemented yet");
         this.backupOriginal();
-        Files.delete(this.contentFile.toPath());
+        if (this.getFileType() == FileType.FILE) {
+            if (this.contentFile != null && this.contentFile.exists()) {
+                Files.delete(this.contentFile.toPath());
+            } else {
+                System.out.printf("Warning: Deleted backup file '%s' did not have a content file%n", this.relativePath);
+            }
+        }
         this.backup.removeFileFromDatabase(this.fileID);
     }
 
@@ -203,14 +216,17 @@ public class BackupFile {
             throw new IOException("Backup directory '" + dir.getAbsolutePath() + "' could not be created");
 
         // Incremental suffix
-        String backupName = this.contentFile.getName();
+        String backupName = this.fileID;
         int i = 0;
         while (new File(dir, backupName + ".plist").exists() || new File(dir, backupName + ".bak").exists()) {
-            backupName = this.contentFile.getName() + "." + (++i);
+            backupName = this.fileID + "." + (++i);
         }
 
         BinaryPropertyListWriter.write(new File(dir, backupName + ".plist"), this.data.dict);
-        Files.copy(this.contentFile.toPath(), new File(dir, backupName + ".bak").toPath());
+
+        if (this.contentFile != null && this.contentFile.exists()) {
+            Files.copy(this.contentFile.toPath(), new File(dir, backupName + ".bak").toPath());
+        }
     }
 
 

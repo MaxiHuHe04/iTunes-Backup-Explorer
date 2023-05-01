@@ -220,7 +220,8 @@ public class ITunesBackup {
                     ));
                 } catch (BackupReadException e) {
                     System.err.println(e.getMessage());
-                } catch (IOException | PropertyListFormatException | ParseException | ParserConfigurationException | SAXException e) {
+                } catch (IOException | PropertyListFormatException | ParseException | ParserConfigurationException |
+                         SAXException e) {
                     e.printStackTrace();
                 }
             }
@@ -255,6 +256,36 @@ public class ITunesBackup {
                         "ORDER BY `flags`, `domain`, `relativePath`",
                 statement -> {
                     for (int i = 0; i < domains.length; i++) statement.setString(i + 1, domains[i]);
+                }
+        );
+    }
+
+    /**
+     * Queries all files and folders contained in a directory and any level of subdirectory of the backup.
+     * @param domain The domain in which the directory is located
+     * @param parentRelativePath The relative path to search in
+     * @return List of recursive children of the parentRelativePath in no specific order
+     * @throws DatabaseConnectionException if the database connection failed
+     */
+    public List<BackupFile> queryAllChildren(String domain, String parentRelativePath) throws DatabaseConnectionException {
+        StringBuilder startsWithEscaped = new StringBuilder(
+                parentRelativePath
+                        .replace("!", "!!")
+                        .replace("%", "!%")
+                        .replace("_", "!_")
+                        .replace("[", "![")
+        );
+
+        // Relative paths don't start with a /, so the isEmpty check is needed for domain roots
+        if (!parentRelativePath.isEmpty() && !parentRelativePath.endsWith("/")) startsWithEscaped.append('/');
+
+        startsWithEscaped.append("_%");
+
+        return queryFiles(
+                "SELECT * FROM files WHERE `domain` = ? AND `relativePath` LIKE ? ESCAPE '!'",
+                statement -> {
+                    statement.setString(1, domain);
+                    statement.setString(2, startsWithEscaped.toString());
                 }
         );
     }

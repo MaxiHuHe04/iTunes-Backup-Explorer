@@ -109,10 +109,12 @@ public class FilesTabController {
             {
                 itemProperty().addListener((observable, oldValue, newValue) -> {
                     if (newValue == null || newValue.getFile().isEmpty()) return;
+                    TreeItem<BackupFileEntry> parent = getTreeItem().getParent();
                     setContextMenu(FileActions.getContextMenu(
                             newValue.getFile().get(),
                             splitPane.getScene().getWindow(),
-                            () -> getTreeItem().getParent().getChildren().remove(getTreeItem()))
+                            // Children are automatically removed as well by the tree structure, so removedIDs can be ignored
+                            removedIDs -> parent.getChildren().remove(getTreeItem()))
                     );
                 });
             }
