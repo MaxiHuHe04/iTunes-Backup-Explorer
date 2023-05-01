@@ -168,7 +168,10 @@ public class ITunesBackup {
     }
 
     public void connectToDatabase() throws DatabaseConnectionException {
-        if (databaseConnected() || decryptedDatabaseFile == null) return;
+        if (databaseConnected()) return;
+
+        if (this.decryptedDatabaseFile == null || !this.decryptedDatabaseFile.exists())
+            throw new DatabaseConnectionException();
 
         try {
             databaseCon = DriverManager.getConnection("jdbc:sqlite:" + decryptedDatabaseFile.getCanonicalPath());
