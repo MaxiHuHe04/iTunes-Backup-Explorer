@@ -14,6 +14,7 @@ public class BackupFileEntry {
     private static final Image domainGroupIcon = ITunesBackupExplorer.getIcon("domain_group.png");
     private static final Image folderIcon = ITunesBackupExplorer.getIcon("folder.png");
     private static final Image fileIcon = ITunesBackupExplorer.getIcon("file.png");
+    private static final Image symlinkIcon = ITunesBackupExplorer.getIcon("symlink.png");
 
     private BackupFile file;
     private final String title;
@@ -48,7 +49,12 @@ public class BackupFileEntry {
             ByteArrayInputStream imageStream = new ByteArrayInputStream(imageData);
             this.icon = new Image(imageStream);
         } else {
-            this.icon = file.getFileType() == BackupFile.FileType.DIRECTORY ? folderIcon : fileIcon;
+            if (this.file.getFileType() == BackupFile.FileType.DIRECTORY)
+                this.icon = folderIcon;
+            else if (this.file.getFileType() == BackupFile.FileType.SYMBOLIC_LINK)
+                this.icon = symlinkIcon;
+            else
+                this.icon = fileIcon;
         }
     }
 

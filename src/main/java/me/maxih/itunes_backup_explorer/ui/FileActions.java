@@ -2,7 +2,9 @@ package me.maxih.itunes_backup_explorer.ui;
 
 import javafx.scene.control.Button;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import me.maxih.itunes_backup_explorer.api.*;
@@ -66,6 +68,24 @@ public class FileActions {
         }
     }
 
+    public static void showSymlinkTarget(BackupFile file) {
+        String target = file.getSymlinkTarget();
+
+        Alert alert = Dialogs.getAlert(Alert.AlertType.INFORMATION, target, ButtonType.CLOSE);
+        alert.setTitle("Symbolic link");
+        alert.setHeaderText("Target of the symbolic link:");
+
+        TextArea textArea = new TextArea(target);
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
+        textArea.setPrefRowCount(2);
+        textArea.setPrefColumnCount(30);
+        HBox content = new HBox(textArea);
+
+        alert.getDialogPane().setContent(content);
+        alert.showAndWait();
+    }
+
     /**
      * Context menu action to delete files or folders
      * @param file The BackupFile to delete
@@ -126,6 +146,9 @@ public class FileActions {
         MenuItem replaceItem = new MenuItem("Replace...");
         replaceItem.setOnAction(event -> FileActions.replaceFile(file, ownerWindow));
 
+        MenuItem showSymlinkTargetItem = new MenuItem("Show symlink target");
+        showSymlinkTargetItem.setOnAction(event -> FileActions.showSymlinkTarget(file));
+
         MenuItem deleteItem = new MenuItem("Delete");
         deleteItem.setStyle("-fx-text-fill: #900;");
         deleteItem.setOnAction(event -> FileActions.delete(file, removeCallback));
@@ -140,6 +163,8 @@ public class FileActions {
             menu.getItems().addAll(insertFilesItem, deleteItem);
         else if (file.getFileType() == BackupFile.FileType.FILE)
             menu.getItems().addAll(openFileItem, extractFileItem, replaceItem, deleteItem);
+        else if (file.getFileType() == BackupFile.FileType.SYMBOLIC_LINK)
+            menu.getItems().addAll(showSymlinkTargetItem, deleteItem);
 
         return menu;
     }

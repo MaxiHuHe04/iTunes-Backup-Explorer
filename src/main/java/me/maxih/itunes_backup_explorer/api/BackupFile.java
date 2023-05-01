@@ -27,6 +27,7 @@ public class BackupFile {
     private final NSObject[] objects;
 
     private File contentFile;
+    private String symlinkTarget;
 
     private long size;
     private int protectionClass;
@@ -64,6 +65,13 @@ public class BackupFile {
                             .getBytes(encryptionKeyBuffer, 4, 40);
                 } else {
                     this.encryptionKey = null;
+                }
+            } else if (this.fileType == FileType.SYMBOLIC_LINK) {
+                Optional<UID> targetUID = this.properties.get(UID.class, "Target");
+                if (targetUID.isPresent()) {
+                    this.symlinkTarget = this.getObject(NSString.class, targetUID.get()).getContent();
+                } else {
+                    throw new BackupReadException("Missing target of symbolic link '" + domain + ":" + relativePath + "'");
                 }
             }
         } catch (NoSuchElementException e) {
@@ -107,6 +115,9 @@ public class BackupFile {
         return BackupPathUtils.getParentPath(this.relativePath);
     }
 
+    public String getSymlinkTarget() {
+        return this.symlinkTarget;
+    }
 
     public void extract(File destination)
             throws IOException, BackupReadException, NotUnlockedException, UnsupportedCryptoException, UnsupportedOperationException {
