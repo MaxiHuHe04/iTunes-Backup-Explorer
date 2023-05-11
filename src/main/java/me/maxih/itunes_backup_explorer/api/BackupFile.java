@@ -4,12 +4,16 @@ import com.dd.plist.*;
 import me.maxih.itunes_backup_explorer.util.BackupPathUtils;
 import me.maxih.itunes_backup_explorer.util.UtilDict;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -26,12 +30,13 @@ public class BackupFile {
     private final UtilDict properties;
     private final NSObject[] objects;
 
-    private File contentFile;
-    private String symlinkTarget;
+    private File contentFile = null;
+    private String symlinkTarget = null;
 
     private long size;
     private int protectionClass;
-    private byte[] encryptionKey;
+    private byte[] encryptionKey = null;
+    private byte[] digest = null;
 
     public BackupFile(ITunesBackup backup, String fileID, String domain, String relativePath, int flags, NSDictionary data) throws BackupReadException {
         this.backup = backup;
@@ -66,6 +71,9 @@ public class BackupFile {
                 } else {
                     this.encryptionKey = null;
                 }
+
+                Optional<UID> digestUID = this.properties.get(UID.class, "Digest");
+                digestUID.ifPresent(uid -> this.digest = this.getObject(NSData.class, uid).bytes());
             } else if (this.fileType == FileType.SYMBOLIC_LINK) {
                 Optional<UID> targetUID = this.properties.get(UID.class, "Target");
                 if (targetUID.isPresent()) {
@@ -86,6 +94,12 @@ public class BackupFile {
         throw new NoSuchElementException();
     }
 
+    private void setObject(UID uid, NSObject object) {
+        byte index = uid.getBytes()[0];
+        this.objects[index] = object;
+        // theoretically not necessary, but don't rely on the array never being cloned
+        this.data.put("$objects", new NSArray(this.objects));
+    }
 
     public FileType getFileType() {
         return fileType;
@@ -117,6 +131,35 @@ public class BackupFile {
 
     public String getSymlinkTarget() {
         return this.symlinkTarget;
+    }
+
+    /**
+     * Files in system domains (excluding camera roll, media and tones)
+     * have SHA-1 hashes of the (encrypted) content files in the database.
+     * iTunes checks them while recovering backups.
+     * @return The digest bytes or null if the file does not have one
+     */
+    public byte[] getDigest() {
+        return this.digest;
+    }
+
+    byte[] calcFileDigest() throws IOException, UnsupportedCryptoException {
+        try {
+            MessageDigest sha1Digest = MessageDigest.getInstance("SHA-1");
+            try (
+                    BufferedInputStream contentInputStream = new BufferedInputStream(new FileInputStream(this.contentFile))
+            ) {
+                byte[] buffer = new byte[8192];
+                int len = contentInputStream.read(buffer);
+                while (len > 0) {
+                    sha1Digest.update(buffer, 0, len);
+                    len = contentInputStream.read(buffer);
+                }
+                return sha1Digest.digest();
+            }
+        } catch (NoSuchAlgorithmException e) {
+            throw new UnsupportedCryptoException(e);
+        }
     }
 
     public void extract(File destination)
@@ -196,6 +239,12 @@ public class BackupFile {
             }
         } else {
             Files.copy(newFile.toPath(), this.contentFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+        }
+
+        Optional<UID> digestUID = this.properties.get(UID.class, "Digest");
+        if (digestUID.isPresent()) {
+            byte[] newDigest = this.calcFileDigest();
+            this.setObject(digestUID.get(), new NSData(newDigest));
         }
 
         this.backup.updateFileInfo(this.fileID, this.data.dict);
