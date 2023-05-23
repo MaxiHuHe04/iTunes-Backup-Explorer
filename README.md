@@ -36,6 +36,12 @@ Replace `JARFILE.jar` with the name of the file you downloaded.
 - Depending on your specific system, you should be able to double-click the file to start the program.
 - If that does not work, use `java -jar JARFILE.jar` to run it.
 
+## Privacy
+
+For me, this was a matter of course, but it was pointed out that I should clarify it anyway.
+I do not collect any personal data. In fact, the program does not even use an internet connection at this time.
+If that should change at some point in the future, I will update this notice.
+
 ## Credits
 
 I started looking into this after I saw 
