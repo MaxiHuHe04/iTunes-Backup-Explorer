@@ -36,6 +36,36 @@ Replace `JARFILE.jar` with the name of the file you downloaded.
 - Depending on your specific system, you should be able to double-click the file to start the program.
 - If that does not work, use `java -jar JARFILE.jar` to run it.
 
+## File Search
+In the "File Search" tab, you can search for files using case-insensitive SQLite LIKE syntax.
+It supports two wildcards: `%` and `_`.
+- `%` matches any sequence of zero or more characters.
+- `_` matches any single character.
+- `\ ` is used as the escape character.
+
+Here are a few examples:<br>
+
+|                                    | Domain           | Relative Path                     |
+|------------------------------------|------------------|-----------------------------------|
+| Videos in the camera roll          | CameraRollDomain | %.mov                             |
+| Files under the DCIM directory     | CameraRollDomain | Media/DCIM/%                      |
+| All .sqlite files                  | %                | %.sqlite                          |
+| .db databases in the home domain   | HomeDomain       | %.db                              |
+| All WhatsApp files                 | %whatsapp%       | %                                 |
+| App documents on iCloud            | HomeDomain       | Library/Mobile Documents/iCloud~% |
+| All files (can take a bit of time) | %                | %                                 |
+
+After you clicked on the `Search` button, you can also sort by clicking on a column name.
+
+To find the largest files, type in a query, click on `Search` and then twice on `Size`.
+
+With the `Export matching` button on the bottom right, you can export all files that match your query to a directory you choose.
+
+By right-clicking on a file row, you can open, extract, replace or delete a single file.
+This works the same as in the hierarchical "Files" tab.
+If it is a symbolic link, you can show the target location.
+
+
 ## Privacy
 
 For me, this was a matter of course, but it was pointed out that I should clarify it anyway.
