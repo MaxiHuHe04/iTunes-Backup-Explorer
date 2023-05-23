@@ -4,10 +4,7 @@ import com.dd.plist.*;
 import me.maxih.itunes_backup_explorer.util.BackupPathUtils;
 import me.maxih.itunes_backup_explorer.util.UtilDict;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -137,6 +134,7 @@ public class BackupFile {
      * Files in system domains (excluding camera roll, media and tones)
      * have SHA-1 hashes of the (encrypted) content files in the database.
      * iTunes checks them while recovering backups.
+     *
      * @return The digest bytes or null if the file does not have one
      */
     public byte[] getDigest() {
@@ -255,22 +253,27 @@ public class BackupFile {
      * deletes the content file if there is one.<br>
      * Important: This does not remove directories recursively,
      * so child nodes could be left without a parent.
-     * @throws IOException if the content file could not be deleted
+     *
+     * @throws IOException                 if the content file could not be deleted
      * @throws DatabaseConnectionException if the database connection failed
      */
     public void delete() throws IOException, DatabaseConnectionException {
-        this.backupOriginal();
-        if (this.getFileType() == FileType.FILE) {
-            if (this.contentFile != null && this.contentFile.exists()) {
-                Files.delete(this.contentFile.toPath());
-            } else {
-                System.out.printf("Warning: Deleted backup file '%s' did not have a content file%n", this.relativePath);
-            }
+        try {
+            this.backupOriginal(true);
+        } catch (FileNotFoundException e) {
+            System.out.printf("Warning: Deleted backup file '%s' did not have a content file%n", this.relativePath);
         }
         this.backup.removeFileFromDatabase(this.fileID);
     }
 
-    private void backupOriginal() throws IOException {
+    /**
+     * Backs up the current state of the file in a separate directory.
+     *
+     * @param move If true, move the content file instead of copying it
+     * @throws FileNotFoundException if the content file is missing (and the file is not a symlink/directory)
+     * @throws IOException           if the file could not be copied/moved to the backup explorer subdirectory.
+     */
+    private void backupOriginal(boolean move) throws IOException {
         File dir = new File(this.backup.directory, "_BackupExplorer");
         if (!dir.isDirectory() && !dir.mkdir())
             throw new IOException("Backup directory '" + dir.getAbsolutePath() + "' could not be created");
@@ -285,10 +288,18 @@ public class BackupFile {
         BinaryPropertyListWriter.write(new File(dir, backupName + ".plist"), this.data.dict);
 
         if (this.contentFile != null && this.contentFile.exists()) {
-            Files.copy(this.contentFile.toPath(), new File(dir, backupName + ".bak").toPath());
+            if (move)
+                Files.move(this.contentFile.toPath(), new File(dir, backupName + ".bak").toPath());
+            else
+                Files.copy(this.contentFile.toPath(), new File(dir, backupName + ".bak").toPath());
+        } else if (this.fileType == FileType.FILE) {
+            throw new FileNotFoundException("Missing content file '" + this.fileID + "' of '" + domain + ":" + relativePath + "'");
         }
     }
 
+    private void backupOriginal() throws IOException {
+        backupOriginal(false);
+    }
 
     public enum FileType {
         FILE(1),
