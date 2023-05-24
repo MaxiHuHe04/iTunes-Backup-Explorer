@@ -20,6 +20,8 @@ cmake-build-*/
 # IntelliJ
 out/
 
+*.iml
+
 ### Java template
 # Compiled class file
 *.class
