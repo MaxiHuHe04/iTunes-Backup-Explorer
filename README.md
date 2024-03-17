@@ -31,6 +31,21 @@ Replace `JARFILE.jar` with the name of the file you downloaded.
 - Now, you should be able to simply double-click the file to start the program.
 - If that does not work, you may need to type `java -jar JARFILE.jar` into the terminal to run it.
 
+**macOS M-Cip (aarch64/arm64)**
+- Install the latest JDK from [oracle.com](https://www.oracle.com/java/technologies/downloads)
+- Download the latest JavaFX from [java.net](https://jdk.java.net/javafx21/)
+- Unzip JavaFX and rename it to a shorter name. Eg.: `javafx`
+- Using the Terminal, `cd` to the download directory and run:
+
+```sh
+java --module-path ./javafx/lib \
+--add-modules javafx.controls,javafx.fxml -jar \
+./itunes-backup-explorer-1.4.jar
+```
+
+It is easier to execute the command if `javafx` and `itunes-backup-explorer-1.4.jar` are in the same directory,
+otherwise it is needed to provide the full path.
+
 **Linux**
 - `cd` to the download directory and type in `chmod +x JARFILE.jar`.
 - Depending on your specific system, you should be able to double-click the file to start the program.
