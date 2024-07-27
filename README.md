@@ -26,15 +26,24 @@ Replace `JARFILE.jar` with the name of the file you downloaded.
 
 **macOS**
 - `cd` to the download directory and type in `chmod +x JARFILE.jar`.
-- You may need to enable Full Disk Access in System Preferences ->
-  Security -> Privacy for the [Jar Launcher](https://stackoverflow.com/a/66762230) or Terminal.app / iTerm.app.
 - Now, you should be able to simply double-click the file to start the program.
 - If that does not work, you may need to type `java -jar JARFILE.jar` into the terminal to run it.
+
+**If you have permission issues**
+
+When exporting data from the backup files, you might get `Operation not permitted`
+ errors on your MacBook. To fix this, go to `System Settings > Privacy & Security > Full Disk Access` and add both `java` binary file and the `jar` file you downloaded.
+
+More detailed information can be checked [here](https://stackoverflow.com/questions/65469536/why-does-a-jar-file-have-no-permissions-to-read-from-disk-when-started-via-doubl/66762230#66762230).
 
 **Linux**
 - `cd` to the download directory and type in `chmod +x JARFILE.jar`.
 - Depending on your specific system, you should be able to double-click the file to start the program.
 - If that does not work, use `java -jar JARFILE.jar` to run it.
+
+## How to build
+1. Run `mvn install`
+2. Run `mvn clean compile assembly:single`
 
 ## File Search
 In the "File Search" tab, you can search for files using case-insensitive SQLite LIKE syntax.
