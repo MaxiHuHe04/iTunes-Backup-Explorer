@@ -15,8 +15,8 @@ that target this issue and none that are also useful for the average user.
 ## Installation
 
 - Open your terminal and type in `java -version`.
-- If the command was not found or the version is below **11**, 
-download and install Java for your operating system, e.g. from [here](https://www.oracle.com/java/technologies/downloads).
+- If the command was not found or the version is below **18**, 
+download and install Java for your operating system, e.g. from [here](https://www.azul.com/downloads/?package=jdk-fx#zulu).
 - Download the jar file of the [latest release](https://github.com/MaxiHuHe04/iTunes-Backup-Explorer/releases/latest) of iTunes Backup Explorer.
 
 **Windows**

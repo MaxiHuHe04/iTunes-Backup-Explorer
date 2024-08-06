@@ -285,7 +285,7 @@ public class BackupFile {
             backupName = this.fileID + "." + (++i);
         }
 
-        BinaryPropertyListWriter.write(new File(dir, backupName + ".plist"), this.data.dict);
+        BinaryPropertyListWriter.write(this.data.dict, new File(dir, backupName + ".plist"));
 
         if (this.contentFile != null && this.contentFile.exists()) {
             if (move)
