@@ -8,7 +8,7 @@ currently from iOS 10.2 onwards.
 
 Most programs that support encrypted backups are either limited trials 
 or expensive. There are apparently only very few open-source projects 
-that target this issue and none that are also useful for the average user.
+that target this issue and none that are also easily usable and/or useful for the average user, but rather most of them being for investigators and police.
 
 ![Program screenshot](https://user-images.githubusercontent.com/12913518/164055723-2d234fa8-922f-439d-974c-f9e7e560a438.png)
 
