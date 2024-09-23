@@ -12,6 +12,9 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -174,37 +177,45 @@ public class KeyBag {
         }
     }
 
-
-    public InputStream decryptStream(byte[] protectionClass, byte[] persistentKey, InputStream source) throws UnsupportedCryptoException, BackupReadException, NotUnlockedException, InvalidKeyException {
-        byte[] key = this.unwrapKeyForClass(protectionClass, persistentKey);
-
-        try {
-            Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
-            c.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(new byte[16]));
-            return new CipherInputStream(source, c);
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException e) {
-            throw new UnsupportedCryptoException(e);
-        }
-    }
-
     public void decryptFile(byte[] protectionClass, byte[] persistentKey, File source, File destination, long size) throws IOException, BackupReadException, UnsupportedCryptoException, NotUnlockedException, InvalidKeyException {
-        try (
-                BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(source));
-                InputStream decryptStream = decryptStream(protectionClass, persistentKey, inputStream);
+        try {
+            var cipher = Cipher.getInstance("AES/CBC/NoPadding");
+            cipher.init(
+                    Cipher.DECRYPT_MODE,
+                    new SecretKeySpec(this.unwrapKeyForClass(protectionClass, persistentKey), "AES"),
+                    new IvParameterSpec(new byte[16]));
+            try (var inChannel = Files.newByteChannel(source.toPath(), StandardOpenOption.READ);
+                 var outChannel = Files.newByteChannel(destination.toPath(), StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
+                var inBuffer = ByteBuffer.allocate(16384);
+                var outBuffer = ByteBuffer.allocate(16384);
+                var bytesWritten = 0L;
+                while (inChannel.read(inBuffer) > 0) {
+                    inBuffer.flip();
+                    cipher.update(inBuffer, outBuffer);
+                    outBuffer.flip();
+                    bytesWritten += outChannel.write(outBuffer);
+                    inBuffer.clear();
+                    outBuffer.clear();
+                }
 
-                FileOutputStream fileOutputStream = new FileOutputStream(destination);
-                BufferedOutputStream outputStream = new BufferedOutputStream(fileOutputStream)
-        ) {
-            decryptStream.transferTo(outputStream);
-            outputStream.flush();
+                inBuffer.flip();
+                cipher.doFinal(inBuffer, outBuffer);
+                outBuffer.flip();
+                bytesWritten += outChannel.write(outBuffer);
 
-            if (size != -1L) {
-                fileOutputStream.getChannel().truncate(size);
-                long padding = size - fileOutputStream.getChannel().size();
-                if (padding != 0 && padding < Integer.MAX_VALUE) {
-                    outputStream.write(new byte[(int) padding]);
+                if (size != -1L) {
+                    if (size < bytesWritten) {
+                        outChannel.truncate(size);
+                    } else if (size > bytesWritten) {
+                        outChannel.write(ByteBuffer.allocate((int) (size - bytesWritten)));
+                    }
                 }
             }
+        } catch (ShortBufferException e) {
+            throw new RuntimeException(e);
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException |
+                 IllegalBlockSizeException | BadPaddingException e) {
+            throw new UnsupportedCryptoException(e);
         }
     }
 
