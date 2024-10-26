@@ -12,6 +12,8 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -188,6 +190,7 @@ public class KeyBag {
     }
 
     public void decryptFile(byte[] protectionClass, byte[] persistentKey, File source, File destination, long size) throws IOException, BackupReadException, UnsupportedCryptoException, NotUnlockedException, InvalidKeyException {
+        long bytesWritten = 0L;
         try (
                 BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(source));
                 InputStream decryptStream = decryptStream(protectionClass, persistentKey, inputStream);
@@ -197,13 +200,29 @@ public class KeyBag {
         ) {
             decryptStream.transferTo(outputStream);
             outputStream.flush();
-
-            if (size != -1L) {
-                fileOutputStream.getChannel().truncate(size);
-                long padding = size - fileOutputStream.getChannel().size();
-                if (padding != 0 && padding < Integer.MAX_VALUE) {
-                    outputStream.write(new byte[(int) padding]);
+            try (FileChannel c = fileOutputStream.getChannel()) {
+                if (size == -1L) {
+                    bytesWritten = c.position();
+                } else {
+                    c.truncate(size);
                 }
+            }
+        }
+        if (size == -1L) {
+            try (FileChannel c = FileChannel.open(destination.toPath(), StandardOpenOption.READ)) {
+                c.position(bytesWritten-1);
+                byte[] singleByte = new byte[1];
+                if (c.read(ByteBuffer.wrap(singleByte)) != 1) {
+                    throw new IOException("Error retrieving last byte of decrypted file");
+                }
+                int paddingLength = 0x00000000FF & singleByte[0];
+                if (paddingLength > 16) {
+                    throw new BackupReadException("Error: bad padding last byte 0x" + Integer.toHexString(paddingLength) + " on file being decrypted");
+                }
+                size = c.position() - paddingLength;
+            }
+            try (FileChannel c = FileChannel.open(destination.toPath(), StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
+                c.truncate(size);
             }
         }
     }
@@ -237,8 +256,9 @@ public class KeyBag {
         ) {
             inputStream.transferTo(encryptStream);
             long mod = source.length() % 16;
-            if (mod != 0) {
-                encryptStream.write(new byte[16 - (int) mod]);
+            int padding = 16 - (int) mod;
+            for (int i = 0; i < padding; i++) {
+                encryptStream.write(padding);
             }
         }
     }
