@@ -179,7 +179,7 @@ public class KeyBag {
 
     public void decryptFile(byte[] protectionClass, byte[] persistentKey, File source, File destination, long size) throws IOException, BackupReadException, UnsupportedCryptoException, NotUnlockedException, InvalidKeyException {
         try {
-            var cipher = Cipher.getInstance("AES/CBC/NoPadding");
+            var cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
             cipher.init(
                     Cipher.DECRYPT_MODE,
                     new SecretKeySpec(this.unwrapKeyForClass(protectionClass, persistentKey), "AES"),
@@ -231,7 +231,7 @@ public class KeyBag {
         byte[] key = this.unwrapKeyForClass(protectionClass, persistentKey);
 
         try {
-            Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
+            Cipher c = Cipher.getInstance("AES/CBC/PKCS5Padding");
             c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(new byte[16]));
             return new CipherOutputStream(destination, c);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException e) {
@@ -247,10 +247,6 @@ public class KeyBag {
                 OutputStream encryptStream = encryptStream(protectionClass, persistentKey, outputStream)
         ) {
             inputStream.transferTo(encryptStream);
-            long mod = source.length() % 16;
-            if (mod != 0) {
-                encryptStream.write(new byte[16 - (int) mod]);
-            }
         }
     }
 
