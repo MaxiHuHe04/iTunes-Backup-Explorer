@@ -28,6 +28,8 @@ public class KeyBag {
     private static final int WRAP_DEVICE = 1;
     private static final int WRAP_PASSCODE = 2;
 
+    private static final int BUFFER_SIZE = 16384;
+
     public int type;
     public byte[] uuid;
     public byte[] wrap;
@@ -189,11 +191,11 @@ public class KeyBag {
 
     public void decryptFile(byte[] protectionClass, byte[] persistentKey, File source, File destination, long size) throws IOException, BackupReadException, UnsupportedCryptoException, NotUnlockedException, InvalidKeyException {
         try (
-                BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(source));
+                BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(source), BUFFER_SIZE);
                 InputStream decryptStream = decryptStream(protectionClass, persistentKey, inputStream);
 
                 FileOutputStream fileOutputStream = new FileOutputStream(destination);
-                BufferedOutputStream outputStream = new BufferedOutputStream(fileOutputStream)
+                BufferedOutputStream outputStream = new BufferedOutputStream(fileOutputStream, BUFFER_SIZE)
         ) {
             decryptStream.transferTo(outputStream);
             outputStream.flush();
@@ -230,9 +232,9 @@ public class KeyBag {
 
     public void encryptFile(byte[] protectionClass, byte[] persistentKey, File source, File destination) throws BackupReadException, UnsupportedCryptoException, NotUnlockedException, InvalidKeyException, IOException {
         try (
-                BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(source));
+                BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(source), BUFFER_SIZE);
 
-                BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(destination));
+                BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(destination), BUFFER_SIZE);
                 OutputStream encryptStream = encryptStream(protectionClass, persistentKey, outputStream)
         ) {
             inputStream.transferTo(encryptStream);
