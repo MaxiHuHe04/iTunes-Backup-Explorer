@@ -181,7 +181,7 @@ public class KeyBag {
         byte[] key = this.unwrapKeyForClass(protectionClass, persistentKey);
 
         try {
-            Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
+            Cipher c = Cipher.getInstance("AES/CBC/PKCS5Padding");
             c.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(new byte[16]));
             return new CipherInputStream(source, c);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException e) {
@@ -200,12 +200,8 @@ public class KeyBag {
             decryptStream.transferTo(outputStream);
             outputStream.flush();
 
-            if (size != -1L) {
-                fileOutputStream.getChannel().truncate(size);
-                long padding = size - fileOutputStream.getChannel().size();
-                if (padding != 0 && padding < Integer.MAX_VALUE) {
-                    outputStream.write(new byte[(int) padding]);
-                }
+            if (size != -1L && fileOutputStream.getChannel().size() != size) {
+                System.out.printf("Warning: File size from database doesn't match actual decrypted size - expected %9d, got %9d (%s)%n", size, fileOutputStream.getChannel().size(), destination.getPath());
             }
         }
     }
@@ -222,7 +218,7 @@ public class KeyBag {
         byte[] key = this.unwrapKeyForClass(protectionClass, persistentKey);
 
         try {
-            Cipher c = Cipher.getInstance("AES/CBC/NoPadding");
+            Cipher c = Cipher.getInstance("AES/CBC/PKCS5Padding");
             c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(new byte[16]));
             return new CipherOutputStream(destination, c);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException e) {
@@ -238,10 +234,6 @@ public class KeyBag {
                 OutputStream encryptStream = encryptStream(protectionClass, persistentKey, outputStream)
         ) {
             inputStream.transferTo(encryptStream);
-            long mod = source.length() % 16;
-            if (mod != 0) {
-                encryptStream.write(new byte[16 - (int) mod]);
-            }
         }
     }
 
