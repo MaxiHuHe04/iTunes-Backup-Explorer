@@ -1,6 +1,7 @@
 package me.maxih.itunes_backup_explorer.api;
 
 import com.dd.plist.NSData;
+import me.maxih.itunes_backup_explorer.util.BackupFilePaddingFixer;
 import org.bouncycastle.crypto.digests.SHA1Digest;
 import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
 import org.bouncycastle.crypto.params.KeyParameter;
@@ -177,15 +178,38 @@ public class KeyBag {
     }
 
 
-    public InputStream decryptStream(byte[] protectionClass, byte[] persistentKey, InputStream source) throws UnsupportedCryptoException, BackupReadException, NotUnlockedException, InvalidKeyException {
+    public InputStream decryptStream(byte[] protectionClass, byte[] persistentKey, InputStream source, String cipherMode) throws UnsupportedCryptoException, BackupReadException, NotUnlockedException, InvalidKeyException {
         byte[] key = this.unwrapKeyForClass(protectionClass, persistentKey);
 
         try {
-            Cipher c = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            Cipher c = Cipher.getInstance(cipherMode);
             c.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(new byte[16]));
             return new CipherInputStream(source, c);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException e) {
             throw new UnsupportedCryptoException(e);
+        }
+    }
+
+    public InputStream decryptStream(byte[] protectionClass, byte[] persistentKey, InputStream source) throws UnsupportedCryptoException, BackupReadException, NotUnlockedException, InvalidKeyException {
+        return decryptStream(protectionClass, persistentKey, source, "AES/CBC/PKCS5Padding");
+    }
+
+    protected void decryptFilePaddingFallback(byte[] protectionClass, byte[] persistentKey, File source, File destination, long size) throws IOException, BackupReadException, UnsupportedCryptoException, NotUnlockedException, InvalidKeyException {
+        try (
+                BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(source), BUFFER_SIZE);
+                InputStream decryptStream = decryptStream(protectionClass, persistentKey, inputStream, "AES/CBC/NoPadding");
+
+                FileOutputStream fileOutputStream = new FileOutputStream(destination);
+                BufferedOutputStream outputStream = new BufferedOutputStream(fileOutputStream, BUFFER_SIZE)
+        ) {
+            decryptStream.transferTo(outputStream);
+            outputStream.flush();
+
+            if (size != -1L && fileOutputStream.getChannel().size() != size) {
+                System.out.printf("Warning: File size from database doesn't match actual decrypted size - expected %9d, got %9d (%s)%n", size, fileOutputStream.getChannel().size(), destination.getPath());
+            }
+
+            BackupFilePaddingFixer.tryFixPadding(destination);
         }
     }
 
@@ -202,6 +226,14 @@ public class KeyBag {
 
             if (size != -1L && fileOutputStream.getChannel().size() != size) {
                 System.out.printf("Warning: File size from database doesn't match actual decrypted size - expected %9d, got %9d (%s)%n", size, fileOutputStream.getChannel().size(), destination.getPath());
+            }
+        } catch (IOException e) {
+            if (e.getCause() instanceof BadPaddingException) {
+                System.out.println("Warning: Bad padding - " + e.getMessage() + " (" + destination.getPath() + ")");
+                System.out.println("Trying to decrypt again without padding...");
+                decryptFilePaddingFallback(protectionClass, persistentKey, source, destination, size);
+            } else {
+                throw e;
             }
         }
     }
