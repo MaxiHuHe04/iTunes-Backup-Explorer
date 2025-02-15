@@ -42,8 +42,18 @@ More detailed information can be checked [here](https://stackoverflow.com/questi
 - If that does not work, use `java -jar JARFILE.jar` to run it.
 
 ## How to build
-1. Run `mvn install`
-2. Run `mvn clean compile assembly:single`
+### Native executables
+1. Install a current JDK and Maven
+2. Run `mvn clean package`
+3. You can find the built executable in `target/app-image` and an installer in `target/installer`
+
+### Jar with dependencies
+To get a jar file with dependencies for your system, use `mvn clean compile assembly:single`.
+
+You can also build a fairly cross-platform jar file with dependencies for Windows, Linux and ARM macOS using the *most_platforms* profile: `mvn clean compile assembly:single -Pmost_platforms`
+
+## How to run directly using Maven
+Use `mvn exec:exec`
 
 ## File Search
 In the "File Search" tab, you can search for files using case-insensitive SQLite LIKE syntax.

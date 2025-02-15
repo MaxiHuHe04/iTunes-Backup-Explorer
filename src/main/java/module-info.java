@@ -6,6 +6,8 @@ module me.maxih.itunes_backup_explorer {
     requires java.sql;
     requires java.desktop;
     requires java.prefs;
+    requires org.xerial.sqlitejdbc;
+    requires org.slf4j.simple;
 
     opens me.maxih.itunes_backup_explorer.ui to javafx.fxml;
     exports me.maxih.itunes_backup_explorer;
