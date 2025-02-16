@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - v*.*
-    branches:
-      - native-installers
 
 jobs:
   build-windows-installer:
@@ -25,8 +23,8 @@ jobs:
       - id: build
         name: Build
         run: mvn --batch-mode package --file pom.xml
-      - id: replace-filename-spaces
-        name: Replace spaces in file name with underscores
+      - id: add-platform-suffix
+        name: Add platform file name suffix
         shell: pwsh
         run: |
           Get-ChildItem target/installer | Rename-Item -NewName { "$($_.BaseName -Replace ' ','_')_win_x64$($_.Extension)" }
@@ -61,9 +59,7 @@ jobs:
         shell: bash
         run: |
           for file in target/installer/*.deb; do
-            before_ext="${file%.*}"
-            replaced_arch="${file//_amd64/_debian_x64}"
-            mv "$file" "${replaced_arch}.deb"
+            mv "$file" "${file//_amd64/_debian_x64}"
           done
       - id: upload-installer
         name: Upload installer
@@ -98,7 +94,7 @@ jobs:
           for file in target/installer/*.dmg; do
             before_ext="${file%.*}"
             replaced_spaces="${before_ext// /_}"
-            mv "$file" "${replaced_spaces}_macOS_arm64.dmg"
+            mv "$file" "${replaced_spaces}_mac_arm64.dmg"
           done
       - id: upload-installer
         name: Upload installer
@@ -133,7 +129,7 @@ jobs:
           for file in target/installer/*.dmg; do
             before_ext="${file%.*}"
             replaced_spaces="${before_ext// /_}"
-            mv "$file" "${replaced_spaces}_macOS_x64.dmg"
+            mv "$file" "${replaced_spaces}_mac_x64.dmg"
           done
       - id: upload-installer
         name: Upload installer
