@@ -107,3 +107,23 @@ jobs:
           path: ./target/installer/*
           name: installer-macos-x64
           if-no-files-found: error
+
+  draft-release:
+    name: Draft a new release
+    runs-on: ubuntu-latest
+    needs: [build-windows-installer, build-linux-installer, build-mac-arm-installer, build-mac-x64-installer]
+    steps:
+      - id: download-artifacts
+        name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: installers
+          pattern: installer-*
+          merge-multiple: true
+      - id: create-release
+        name: Create GitHub release draft
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          draft: true
+          files: installers/*
