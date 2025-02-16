@@ -54,7 +54,7 @@ echo Packaging...
   --app-version "$APP_VERSION" \
   --copyright "Copyright © 2025 Maximilian Herczegh" \
   --vendor "Maximilian Herczegh" \
-  --icon "src/main/resources/me/maxih/itunes_backup_explorer/icon.png" \
+  --icon "src/main/resources/me/maxih/itunes_backup_explorer/icon.icns" \
   --runtime-image "target/runtime-image" \
   --module "$MAIN_MODULE/$MAIN_CLASS"
 
@@ -64,8 +64,8 @@ echo Packaging...
     --app-version "$APP_VERSION" \
     --copyright "Copyright © 2025 Maximilian Herczegh" \
     --vendor "Maximilian Herczegh" \
-    --icon "src/main/resources/me/maxih/itunes_backup_explorer/icon.png" \
+    --icon "src/main/resources/me/maxih/itunes_backup_explorer/icon.icns" \
     --app-image "target/app-image/$APP_NAME" \
     --mac-package-identifier "maxih.itunes-backup-explorer" \
     --mac-package-name "Backup Explorer" \
-    --map-app-category "utilities"
+    --mac-app-category "utilities"
