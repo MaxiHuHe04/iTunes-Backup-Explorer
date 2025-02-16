@@ -116,7 +116,7 @@
                                 </goals>
                                 <configuration>
                                     <workingDirectory>${project.basedir}</workingDirectory>
-                                    <executable>packaging/package-macos.bat</executable>
+                                    <executable>packaging/package-macos.sh</executable>
                                     <environmentVariables>
                                         <APP_VERSION>${app.version}</APP_VERSION>
                                         <PROJECT_VERSION>${project.version}</PROJECT_VERSION>
