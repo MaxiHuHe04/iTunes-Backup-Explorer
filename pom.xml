@@ -134,6 +134,7 @@
             <activation>
                 <os>
                     <family>unix</family>
+                    <name>!mac os x</name>
                 </os>
             </activation>
             <build>

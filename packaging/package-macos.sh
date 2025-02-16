@@ -8,7 +8,7 @@
 # JAVA_HOME
 # JAVA_RELEASE (e.g. 23)
 
-APP_NAME="itunes-backup-explorer"
+APP_NAME="iTunes Backup Explorer"
 MAIN_JAR="itunes-backup-explorer-$PROJECT_VERSION.jar"
 MAIN_MODULE="me.maxih.itunes_backup_explorer"
 MAIN_CLASS="me.maxih.itunes_backup_explorer.ITunesBackupExplorerLauncher"
@@ -65,7 +65,7 @@ echo Packaging...
     --copyright "Copyright © 2025 Maximilian Herczegh" \
     --vendor "Maximilian Herczegh" \
     --icon "src/main/resources/me/maxih/itunes_backup_explorer/icon.icns" \
-    --app-image "target/app-image/$APP_NAME" \
+    --app-image "target/app-image/$APP_NAME.app" \
     --mac-package-identifier "maxih.itunes-backup-explorer" \
     --mac-package-name "Backup Explorer" \
     --mac-app-category "utilities"
