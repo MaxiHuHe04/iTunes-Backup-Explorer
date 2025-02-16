@@ -1,0 +1,109 @@
+name: Build platform-specific installers
+
+on:
+  push:
+    tags:
+      - v*.*
+    branches:
+      - native-installers
+
+jobs:
+  build-windows-installer:
+    name: Build installer for Windows
+    runs-on: windows-latest
+    steps:
+      - id: checkout-code
+        name: Checkout code
+        uses: actions/checkout@v4
+      - id: setup-jdk
+        name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '23'
+          cache: 'maven'
+      - id: build
+        name: Build
+        run: mvn --batch-mode package --file pom.xml
+      - id: upload-installer
+        name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          path: ./target/installer/*.msi
+          name: installer-windows
+          if-no-files-found: error
+
+  build-linux-installer:
+    name: Build installer for Linux
+    runs-on: ubuntu-latest
+    steps:
+      - id: checkout-code
+        name: Checkout code
+        uses: actions/checkout@v4
+      - id: setup-jdk
+        name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '23'
+          cache: 'maven'
+      - id: build
+        name: Build
+        run: mvn --batch-mode package --file pom.xml
+      - id: upload-installer
+        name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          path: ./target/installer/*
+          name: installer-linux
+          if-no-files-found: error
+
+  build-mac-arm-installer:
+    name: Build installer for ARM64 macOS
+    runs-on: macos-latest
+    steps:
+      - id: checkout-code
+        name: Checkout code
+        uses: actions/checkout@v4
+      - id: setup-jdk
+        name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '23'
+          cache: 'maven'
+      - id: build
+        name: Build
+        run: mvn --batch-mode package --file pom.xml
+      - id: upload-installer
+        name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          path: ./target/installer/*
+          name: installer-macos-arm64
+          if-no-files-found: error
+
+  build-mac-x64-installer:
+    name: Build installer for x64 macOS
+    runs-on: macos-13
+    steps:
+      - id: checkout-code
+        name: Checkout code
+        uses: actions/checkout@v4
+      - id: setup-jdk
+        name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '23'
+          cache: 'maven'
+      - id: build
+        name: Build
+        run: mvn --batch-mode package --file pom.xml
+      - id: upload-installer
+        name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          path: ./target/installer/*
+          name: installer-macos-x64
+          if-no-files-found: error
