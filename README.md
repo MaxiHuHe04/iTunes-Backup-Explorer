@@ -14,15 +14,18 @@ that target this issue and none that are also useful for the average user.
 
 ## Installation
 
+<details>
+<summary>Jar file with dependencies (prior to v1.7)</summary>
+
 - Open your terminal and type in `java -version`.
-- If the command was not found or the version is below **18**, 
-download and install Java for your operating system, e.g. from [here](https://www.azul.com/downloads/?package=jdk-fx#zulu).
+- If the command was not found or the version is below **18**,
+  download and install Java for your operating system, e.g. from [here](https://www.azul.com/downloads/?package=jdk-fx#zulu).
 - Download the jar file of the [latest release](https://github.com/MaxiHuHe04/iTunes-Backup-Explorer/releases/latest) of iTunes Backup Explorer.
 
 **Windows**
 - Simply double-click the downloaded file to start the program.
 - From the command line: `java -jar JARFILE.jar`.
-Replace `JARFILE.jar` with the name of the file you downloaded.
+  Replace `JARFILE.jar` with the name of the file you downloaded.
 
 **macOS**
 - `cd` to the download directory and type in `chmod +x JARFILE.jar`.
@@ -32,7 +35,7 @@ Replace `JARFILE.jar` with the name of the file you downloaded.
 **If you have permission issues**
 
 When exporting data from the backup files, you might get `Operation not permitted`
- errors on your MacBook. To fix this, go to `System Settings > Privacy & Security > Full Disk Access` and add both `java` binary file and the `jar` file you downloaded.
+errors on your MacBook. To fix this, go to `System Settings > Privacy & Security > Full Disk Access` and add both the `java` binary file and the `jar` file you downloaded.
 
 More detailed information can be checked [here](https://stackoverflow.com/questions/65469536/why-does-a-jar-file-have-no-permissions-to-read-from-disk-when-started-via-doubl/66762230#66762230).
 
@@ -41,19 +44,28 @@ More detailed information can be checked [here](https://stackoverflow.com/questi
 - Depending on your specific system, you should be able to double-click the file to start the program.
 - If that does not work, use `java -jar JARFILE.jar` to run it.
 
-## How to build
-### Native executables
-1. Install a current JDK and Maven
-2. Run `mvn clean package`
-3. You can find the built executable in `target/app-image` and an installer in `target/installer`
+</details>
 
-### Jar with dependencies
-To get a jar file with dependencies for your system, use `mvn clean compile assembly:single`.
+Starting with version 1.7, the recommended way to install the program
+is using the installer for your operating system from the [latest release](https://github.com/MaxiHuHe04/iTunes-Backup-Explorer/releases/latest).
 
-You can also build a fairly cross-platform jar file with dependencies for Windows, Linux and ARM macOS using the *most_platforms* profile: `mvn clean compile assembly:single -Pmost_platforms`
+### Windows
+Download and run the `_win_x64.msi` installer.
+By default, it installs the program just for your user
+and doesn't require administrator privileges.
+Then, simply double-click the shortcut on your desktop
+or use Windows search to launch it.
 
-## How to run directly using Maven
-Use `mvn exec:exec`
+### macOS
+Files ending with `_mac_arm64.dmg` can be used to install the program on Apple silicon processors (M1, M2, ...)
+while `_mac_x64.dmg` images support Intel-based Macs.
+
+You might have to go to `System Settings > Privacy & Security > Full Disk Access` and give the application 
+full disk access to prevent `Operation not permitted` errors when trying to export files.
+
+### Debian/Ubuntu
+Download the `_debian_x64.deb` file and install it using `sudo apt install ./path/to/package.deb`.
+The application is installed to `/opt/itunes-backup-explorer` and added to the desktop menu as an *archiving utility*.
 
 ## File Search
 In the "File Search" tab, you can search for files using case-insensitive SQLite LIKE syntax.
@@ -90,6 +102,22 @@ If it is a symbolic link, you can show the target location.
 For me, this was a matter of course, but it was pointed out that I should clarify it anyway.
 I do not collect any personal data. In fact, the program does not even use an internet connection at this time.
 If that should change at some point in the future, I will update this notice.
+
+
+## How to build
+### Native executables
+1. Install a current JDK and Maven
+2. Run `mvn clean package`
+3. You can find the built executable in `target/app-image` and an installer in `target/installer`
+
+### Jar with dependencies
+To get a jar file with dependencies for your system, use `mvn clean compile assembly:single`.
+
+You can also build a fairly cross-platform jar file with dependencies for Windows, Linux and ARM macOS using the *most_platforms* profile: `mvn clean compile assembly:single -Pmost_platforms`
+
+
+## How to run directly using Maven
+Use `mvn exec:exec`
 
 ## Credits
 
