@@ -49,7 +49,6 @@ public class FilesTabController {
                 } else {
                     this.setPrefHeight(36);
 
-
                     CheckBox checkBox = new CheckBox();
                     checkBox.selectedProperty().bindBidirectional(item.checkBoxSelectedProperty());
                     checkBox.indeterminateProperty().bindBidirectional(item.checkBoxIndeterminateProperty());
@@ -69,7 +68,6 @@ public class FilesTabController {
 
                     getDisclosureNode().setTranslateY(8);
                 }
-
             }
         });
 
@@ -91,13 +89,12 @@ public class FilesTabController {
                     } catch (DatabaseConnectionException | BackupReadException e) {
                         e.printStackTrace();
                     }
-
                     return root;
                 }
             };
 
-            loadDomainFilesTask.valueProperty().addListener((obs, old, root) -> {
-                filesTreeView.setRoot(root);
+            loadDomainFilesTask.valueProperty().addListener((obs, oldRoot, newRoot) -> {
+                filesTreeView.setRoot(newRoot);
                 domainsTreeView.setCursor(Cursor.DEFAULT);
                 filesTreeView.setCursor(Cursor.DEFAULT);
             });
@@ -111,11 +108,11 @@ public class FilesTabController {
                     if (newValue == null || newValue.getFile().isEmpty()) return;
                     TreeItem<BackupFileEntry> parent = getTreeItem().getParent();
                     setContextMenu(FileActions.getContextMenu(
-                            newValue.getFile().get(),
-                            splitPane.getScene().getWindow(),
-                            // Children are automatically removed as well by the tree structure, so removedIDs can be ignored
-                            removedIDs -> parent.getChildren().remove(getTreeItem()))
-                    );
+                        newValue.getFile().get(),
+                        splitPane.getScene().getWindow(),
+                        // Children are automatically removed as well by the tree structure, so removedIDs can be ignored
+                        removedIDs -> parent.getChildren().remove(getTreeItem())
+                    ));
                 });
             }
 
@@ -127,7 +124,9 @@ public class FilesTabController {
                     setText(null);
                     setGraphic(null);
                 } else {
-                    boolean isDirectory = item.getFile().filter(f -> f.getFileType() == BackupFile.FileType.DIRECTORY).isPresent();
+                    boolean isDirectory = item.getFile()
+                                              .filter(f -> f.getFileType() == BackupFile.FileType.DIRECTORY)
+                                              .isPresent();
 
                     CheckBox checkBox = new CheckBox();
                     checkBox.selectedProperty().bindBidirectional(item.checkBoxSelectedProperty());
@@ -147,7 +146,6 @@ public class FilesTabController {
                     setGraphic(graphic);
                     setText(item.getDisplayName());
                 }
-
             }
         });
     }
@@ -160,7 +158,7 @@ public class FilesTabController {
         for (BackupFileEntry item : items) {
             int level = item.getPathLevel();
             if (level > maxLevel) maxLevel = level;
-            if (!levels.containsKey(level)) levels.put(item.getPathLevel(), new ArrayList<>());
+            if (!levels.containsKey(level)) levels.put(level, new ArrayList<>());
             TreeItem<BackupFileEntry> treeItem = new TreeItem<>(item);
 
             item.selectionProperty().addListener((obs, prevSelection, selection) -> {
@@ -191,27 +189,27 @@ public class FilesTabController {
         parents.add(root);
         for (int currentLevel = 1; currentLevel <= maxLevel; currentLevel++) {
             List<TreeItem<BackupFileEntry>> children = levels.get(currentLevel);
-            if (children == null)
-                children = new ArrayList<>();  // will eventually fail but results in a nicer error message
+            if (children == null) children = new ArrayList<>();  // will eventually fail but results in a nicer error message
 
             for (TreeItem<BackupFileEntry> child : children) {
                 BackupFileEntry childEntry = child.getValue();
 
                 Optional<TreeItem<BackupFileEntry>> parent = CollectionUtils.find(parents, parentCandidate -> {
                     BackupFileEntry parentEntry = parentCandidate.getValue();
-
                     if (parentEntry.getFile().isEmpty()) return false;
                     BackupFile parentFile = parentEntry.getFile().get();
-
                     return parentFile.getFileType() == BackupFile.FileType.DIRECTORY
-                            && parentFile.domain.equals(childEntry.getDomain())
-                            && childEntry.getParentPath().equals(parentFile.relativePath);
+                        && parentFile.domain.equals(childEntry.getDomain())
+                        && childEntry.getParentPath().equals(parentFile.relativePath);
                 });
 
                 if (parent.isPresent()) {
                     parent.get().getChildren().add(child);
                 } else {
-                    throw new BackupReadException("Missing parent directory: " + childEntry.getDomain() + "-" + BackupPathUtils.getParentPath(childEntry.getRelativePath()));
+                    throw new BackupReadException(
+                        "Missing parent directory: " + childEntry.getDomain() + "-" +
+                        BackupPathUtils.getParentPath(childEntry.getRelativePath())
+                    );
                 }
             }
 
@@ -232,7 +230,9 @@ public class FilesTabController {
             domains = backup.queryDomainRoots();
         } catch (DatabaseConnectionException e) {
             e.printStackTrace();
-            Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage());
+            Platform.runLater(() -> {
+                Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage());
+            });
             domains = Collections.emptyList();
         }
 
@@ -256,10 +256,11 @@ public class FilesTabController {
             else root.getChildren().add(item);
         }
 
-        List<TreeItem<BackupFileEntry>> domainGroups = Arrays.asList(apps, appGroups, appPlugins, sysContainers, sysSharedContainers);
+        List<TreeItem<BackupFileEntry>> domainGroups =
+            Arrays.asList(apps, appGroups, appPlugins, sysContainers, sysSharedContainers);
         for (TreeItem<BackupFileEntry> domainGroup : domainGroups) {
             domainGroup.getValue().selectionProperty().addListener((observable, prevSelection, selection) ->
-                    domainGroup.getChildren().forEach(group -> group.getValue().setSelection(selection))
+                domainGroup.getChildren().forEach(group -> group.getValue().setSelection(selection))
             );
         }
 
@@ -281,16 +282,42 @@ public class FilesTabController {
         if (destination == null) return;
 
         List<BackupFile> selectedFiles = flattenAllChildren(filesTreeView.getRoot())
-                .map(TreeItem::getValue)
-                .filter(entry -> entry.getSelection() != BackupFileEntry.Selection.NONE)
-                .map(BackupFileEntry::getFile)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toList());
+            .map(TreeItem::getValue)
+            .filter(entry -> entry.getSelection() != BackupFileEntry.Selection.NONE)
+            .map(BackupFileEntry::getFile)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toList());
 
-        Task<Void> extractTask = exportFiles(selectedFiles, destination);
+        Task<Integer> extractTask = exportFiles(selectedFiles, destination);
 
-        Dialogs.ProgressAlert progress = new Dialogs.ProgressAlert("Extracting...", extractTask, true);
+        extractTask.setOnSucceeded(event -> {
+            Platform.runLater(() -> {
+                Integer successCount = extractTask.getValue();
+                int totalCount = selectedFiles.size();
+                String message = String.format(
+                    "%d of %d files successfully exported to:\n%s",
+                    successCount, totalCount, destination.getAbsolutePath()
+                );
+                Dialogs.showSuccessDialog(message);
+            });
+        });
+
+        extractTask.setOnFailed(event -> {
+            Throwable exception = extractTask.getException();
+            if (exception != null) {
+                exception.printStackTrace();
+                Platform.runLater(() -> {
+                    Dialogs.showAlert(
+                        Alert.AlertType.ERROR,
+                        "Export error: " + exception.getMessage(),
+                        ButtonType.OK
+                    );
+                });
+            }
+        });
+
+        Dialogs.ProgressAlert progress = new Dialogs.ProgressAlert("Exporting selected files...", extractTask, true);
         new Thread(extractTask).start();
         progress.showAndWait();
     }
@@ -302,42 +329,71 @@ public class FilesTabController {
         if (destination == null) return;
 
         String[] selectedDomains = flattenAllChildren(domainsTreeView.getRoot())
-                .map(TreeItem::getValue)
-                .filter(entry -> entry.getSelection() != BackupFileEntry.Selection.NONE)
-                .map(BackupFileEntry::getFile)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .map(file -> file.domain)
-                .toArray(String[]::new);
+            .map(TreeItem::getValue)
+            .filter(entry -> entry.getSelection() != BackupFileEntry.Selection.NONE)
+            .map(BackupFileEntry::getFile)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .map(file -> file.domain)
+            .toArray(String[]::new);
 
-        List<BackupFile> selectedFiles = null;
+        List<BackupFile> selectedFiles;
         try {
             selectedFiles = selectedBackup.queryDomainFiles(true, selectedDomains);
         } catch (DatabaseConnectionException e) {
             e.printStackTrace();
             Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage());
+            return;
         }
 
-        Task<Void> extractTask = exportFiles(selectedFiles, destination);
+        Task<Integer> extractTask = exportFiles(selectedFiles, destination);
 
-        Dialogs.ProgressAlert progress = new Dialogs.ProgressAlert("Extracting...", extractTask, true);
+        extractTask.setOnSucceeded(event -> {
+            Platform.runLater(() -> {
+                Integer successCount = extractTask.getValue();
+                int totalCount = selectedFiles.size();
+                String message = String.format(
+                    "%d of %d files successfully exported to:\n%s",
+                    successCount, totalCount, destination.getAbsolutePath()
+                );
+                Dialogs.showSuccessDialog(message);
+            });
+        });
+
+        extractTask.setOnFailed(event -> {
+            Throwable exception = extractTask.getException();
+            if (exception != null) {
+                exception.printStackTrace();
+                Platform.runLater(() -> {
+                    Dialogs.showAlert(
+                        Alert.AlertType.ERROR,
+                        "Export error: " + exception.getMessage(),
+                        ButtonType.OK
+                    );
+                });
+            }
+        });
+
+        Dialogs.ProgressAlert progress = new Dialogs.ProgressAlert("Exporting selected domains...", extractTask, true);
         new Thread(extractTask).start();
         progress.showAndWait();
     }
 
-    private Task<Void> exportFiles(List<BackupFile> files, File destination) {
-        return new Task<>() {
+    private Task<Integer> exportFiles(List<BackupFile> files, File destination) {
+        return new Task<Integer>() {
             @Override
-            protected Void call() throws Exception {
+            protected Integer call() throws Exception {
                 ButtonType skipButtonType = new ButtonType("Skip", ButtonBar.ButtonData.NEXT_FORWARD);
                 ButtonType skipAllExistingButtonType = new ButtonType("Skip all existing", ButtonBar.ButtonData.NEXT_FORWARD);
                 boolean skipExisting = false;
+                int successCount = 0;
 
                 for (int i = 0; i < files.size(); i++) {
                     try {
                         if (Thread.interrupted()) break;
                         files.get(i).extractToFolder(destination, true);
-                        updateProgress(i, files.size());
+                        successCount++;
+                        updateProgress(i + 1, files.size());
                     } catch (ClosedByInterruptException e) {
                         break;
                     } catch (FileAlreadyExistsException e) {
@@ -346,18 +402,21 @@ public class FilesTabController {
                         if (file == null) file = "";
 
                         Optional<ButtonType> response = showFileExportError(
-                                "File already exists:\n" + file, skipButtonType, skipAllExistingButtonType, ButtonType.CANCEL);
+                            "File already exists:\n" + file,
+                            skipButtonType, skipAllExistingButtonType, ButtonType.CANCEL
+                        );
                         if (response.isEmpty() || response.get() == ButtonType.CANCEL) break;
                         if (response.get() == skipAllExistingButtonType) skipExisting = true;
                     } catch (IOException | BackupReadException | NotUnlockedException | UnsupportedCryptoException e) {
                         e.printStackTrace();
                         Optional<ButtonType> response = showFileExportError(
-                                e.getMessage() + "\nContinue?", ButtonType.YES, ButtonType.CANCEL);
+                            e.getMessage() + "\nContinue?", ButtonType.YES, ButtonType.CANCEL
+                        );
                         if (response.isEmpty() || response.get() == ButtonType.CANCEL) break;
                     }
                 }
 
-                return null;
+                return successCount;
             }
         };
     }
@@ -373,5 +432,4 @@ public class FilesTabController {
         Platform.runLater(alertTask);
         return alertTask.get();
     }
-
 }

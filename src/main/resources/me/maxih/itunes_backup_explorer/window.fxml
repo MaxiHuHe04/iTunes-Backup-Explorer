@@ -24,7 +24,7 @@
                     <MenuItem mnemonicParsing="false" text="Unselect All"/>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Help">
-                    <MenuItem mnemonicParsing="false" text="About iTunes Backup Explorer"/>
+                    <MenuItem mnemonicParsing="false" text="About iTunes Backup Explorer" onAction="#openAbout"/>
                 </Menu>
             </MenuBar>
         </top>

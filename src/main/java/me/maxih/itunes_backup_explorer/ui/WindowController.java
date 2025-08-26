@@ -13,9 +13,9 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.DirectoryChooser;
 import me.maxih.itunes_backup_explorer.ITunesBackupExplorer;
 import me.maxih.itunes_backup_explorer.api.BackupReadException;
 import me.maxih.itunes_backup_explorer.api.ITunesBackup;
@@ -31,6 +31,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.*;
+import java.net.URI;
 
 public class WindowController {
     static final DateFormat BACKUP_DATE_FMT = new SimpleDateFormat("dd.MM.yyyy HH:mm");
@@ -213,13 +214,13 @@ public class WindowController {
 
     @FXML
     public void fileOpenBackup() {
-        FileChooser chooser = new FileChooser();
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("iTunes Backup", "Manifest.plist", "Manifest.db"));
-        File source = chooser.showOpenDialog(tabPane.getScene().getWindow());
-        if (source == null) return;
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle("select iTunes Backup");
+        File folder = chooser.showDialog(tabPane.getScene().getWindow());
+        if (folder == null) return;
 
         try {
-            ITunesBackup backup = new ITunesBackup(source.getParentFile());
+            ITunesBackup backup = new ITunesBackup(folder);
             this.loadBackup(backup);
             this.selectBackup(backup);
         } catch (FileNotFoundException e) {
@@ -233,5 +234,17 @@ public class WindowController {
     public void quit() {
         this.cleanUp();
         Platform.exit();
+    }
+
+    @FXML
+    public void openAbout() {
+        // didnt work on linux without this (program froze completely)
+        new Thread(() -> {
+            try {
+                Desktop.getDesktop().browse(new java.net.URI("https://github.com/MaxiHuHe04/iTunes-Backup-Explorer"));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 }

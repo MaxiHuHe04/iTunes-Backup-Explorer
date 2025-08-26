@@ -42,9 +42,13 @@ public class FileActions {
         File destination = chooser.showSaveDialog(chooserOwnerWindow);
         if (destination == null) return;
 
+
         try {
             file.extract(destination);
-        } catch (IOException | BackupReadException | NotUnlockedException | UnsupportedCryptoException e) {
+            Dialogs.showSuccessDialog("The file was successfully exported to:\n" + destination.getAbsolutePath());
+        } 
+        
+        catch (IOException | BackupReadException | NotUnlockedException | UnsupportedCryptoException e) {
             e.printStackTrace();
             Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK);
         }
