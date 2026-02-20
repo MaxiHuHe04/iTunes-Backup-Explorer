@@ -79,3 +79,7 @@ $RECYCLE.BIN/
 
 /local/
 *.afphoto
+
+### Python
+__pycache__/
+*.pyc

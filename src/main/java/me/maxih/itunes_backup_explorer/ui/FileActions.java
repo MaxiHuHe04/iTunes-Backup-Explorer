@@ -8,6 +8,8 @@ import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import me.maxih.itunes_backup_explorer.api.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.io.File;
@@ -18,6 +20,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class FileActions {
+    private static final Logger logger = LoggerFactory.getLogger(FileActions.class);
 
     public static void openFile(BackupFile file) {
         try {
@@ -25,10 +28,29 @@ public class FileActions {
             File tempFile = Files.createTempFile(file.getFileName(), ext.length() > 0 ? ("." + ext) : ".txt").toFile();
             tempFile.deleteOnExit();
             file.extract(tempFile);
-            Desktop.getDesktop().open(tempFile);
+
+            Thread opener = new Thread(() -> {
+                try {
+                    String os = System.getProperty("os.name").toLowerCase();
+                    if (os.contains("linux")) {
+                        new ProcessBuilder("xdg-open", tempFile.getAbsolutePath()).start();
+                    } else if (os.contains("mac")) {
+                        new ProcessBuilder("open", tempFile.getAbsolutePath()).start();
+                    } else {
+                        Desktop.getDesktop().open(tempFile);
+                    }
+                } catch (IOException e) {
+                    logger.error("Failed to open file with default application", e);
+                    javafx.application.Platform.runLater(() ->
+                            Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK)
+                    );
+                }
+            });
+            opener.setDaemon(true);
+            opener.start();
         } catch (IOException | UnsupportedCryptoException | NotUnlockedException |
                  BackupReadException exception) {
-            exception.printStackTrace();
+            logger.error("Failed to open file", exception);
             Dialogs.showAlert(Alert.AlertType.ERROR, exception.getMessage(), ButtonType.OK);
         }
     }
@@ -36,6 +58,8 @@ public class FileActions {
     public static void extractFile(BackupFile file, Window chooserOwnerWindow) {
         FileChooser chooser = new FileChooser();
         chooser.setInitialFileName(file.getFileName());
+        File lastDirectory = PreferencesController.getLastExportDirectory();
+        if (lastDirectory != null) chooser.setInitialDirectory(lastDirectory);
         String ext = file.getFileExtension();
         if (ext.length() > 0)
             chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(ext, "*." + ext));
@@ -43,9 +67,10 @@ public class FileActions {
         if (destination == null) return;
 
         try {
-            file.extract(destination);
+            file.extract(destination, PreferencesController.getPreserveTimestamps());
+            PreferencesController.setLastExportDirectory(destination.getParentFile());
         } catch (IOException | BackupReadException | NotUnlockedException | UnsupportedCryptoException e) {
-            e.printStackTrace();
+            logger.error("Failed to extract file", e);
             Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK);
         }
     }
@@ -63,7 +88,7 @@ public class FileActions {
             file.backup.reEncryptDatabase();
         } catch (IOException | BackupReadException | NotUnlockedException | UnsupportedCryptoException |
                  DatabaseConnectionException e) {
-            e.printStackTrace();
+            logger.error("Failed to replace file", e);
             Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK);
         }
     }
@@ -92,15 +117,17 @@ public class FileActions {
      * @param removeCallback This is called with the <code>fileID</code>s of the deleted files including children
      */
     public static void delete(BackupFile file, Consumer<List<String>> removeCallback) {
-        Alert confirmation = Dialogs.getAlert(Alert.AlertType.CONFIRMATION,
-                file.getFileType() == BackupFile.FileType.DIRECTORY
-                        ? "Are you sure you want to delete this folder and everything in it?"
-                        : "Are you sure you want to delete this file?",
-                ButtonType.YES, ButtonType.CANCEL
-        );
-        ((Button) confirmation.getDialogPane().lookupButton(ButtonType.YES)).setDefaultButton(false);
-        ((Button) confirmation.getDialogPane().lookupButton(ButtonType.CANCEL)).setDefaultButton(true);
-        if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.YES) return;
+        if (PreferencesController.getConfirmBeforeDelete()) {
+            Alert confirmation = Dialogs.getAlert(Alert.AlertType.CONFIRMATION,
+                    file.getFileType() == BackupFile.FileType.DIRECTORY
+                            ? "Are you sure you want to delete this folder and everything in it?"
+                            : "Are you sure you want to delete this file?",
+                    ButtonType.YES, ButtonType.CANCEL
+            );
+            ((Button) confirmation.getDialogPane().lookupButton(ButtonType.YES)).setDefaultButton(false);
+            ((Button) confirmation.getDialogPane().lookupButton(ButtonType.CANCEL)).setDefaultButton(true);
+            if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.YES) return;
+        }
 
         try {
             List<String> deletedFileIDs = new ArrayList<>();
@@ -120,7 +147,7 @@ public class FileActions {
             removeCallback.accept(deletedFileIDs);
         } catch (IOException | DatabaseConnectionException | BackupReadException | UnsupportedCryptoException |
                  NotUnlockedException e) {
-            e.printStackTrace();
+            logger.error("Failed to delete file", e);
             Dialogs.showAlert(Alert.AlertType.ERROR, e.getMessage(), ButtonType.OK);
         }
     }
@@ -131,7 +158,7 @@ public class FileActions {
         if (files == null) return;
 
         for (File file : files) {
-            System.out.println(file.getAbsolutePath());
+            logger.info("Inserting file: {}", file.getAbsolutePath());
             // TODO: insert files
         }
     }

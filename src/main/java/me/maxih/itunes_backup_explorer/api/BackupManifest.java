@@ -40,9 +40,9 @@ public class BackupManifest {
             this.passcodeSet = dict.getBoolean("WasPasscodeSet").orElseThrow();
             this.productVersion = lockdown.getString("ProductVersion").orElseThrow();
             this.productType = lockdown.getString("ProductType").orElseThrow();
-            this.buildVersion = lockdown.getString("BuildVersion").orElseThrow();
-            this.uniqueDeviceID = lockdown.getString("UniqueDeviceID").orElseThrow();
-            this.serialNumber = lockdown.getString("SerialNumber").orElseThrow();
+            this.buildVersion = lockdown.getString("BuildVersion").orElse("");
+            this.uniqueDeviceID = lockdown.getString("UniqueDeviceID").orElse("");
+            this.serialNumber = lockdown.getString("SerialNumber").orElse("");
             this.deviceName = lockdown.getString("DeviceName").orElseThrow();
             this.applications = dict.get(NSDictionary.class, "Applications").orElseThrow();
             if (this.encrypted) {

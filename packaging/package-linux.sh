@@ -68,4 +68,5 @@ echo Packaging...
     --app-image "target/app-image/$APP_NAME" \
     --linux-menu-group "Utility;Archiving;" \
     --linux-shortcut \
-    --linux-app-category "utils"
+    --linux-app-category "utils" \
+    --linux-package-deps "ffmpeg, imagemagick, libheif1, libimobiledevice-utils, usbmuxd, ideviceinstaller, python3, python3-venv, python3-pip"

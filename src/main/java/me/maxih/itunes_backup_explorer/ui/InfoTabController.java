@@ -6,7 +6,12 @@ import javafx.scene.control.TextField;
 import me.maxih.itunes_backup_explorer.api.BackupInfo;
 import me.maxih.itunes_backup_explorer.api.BackupManifest;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+
 public class InfoTabController {
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM);
 
     @FXML
     private Label infoDeviceName;
@@ -40,13 +45,13 @@ public class InfoTabController {
         this.infoBuildVersion.setText(manifest.buildVersion);
         this.infoEncrypted.setText(manifest.encrypted ? "yes" : "no");
         this.infoVersion.setText(manifest.version);
-        this.infoCreationDate.setText(manifest.date.toString());
+        this.infoCreationDate.setText(manifest.date.toInstant().atZone(ZoneId.systemDefault()).format(DATE_FORMATTER));
         if (info == null) {
             this.infoPhoneNumber.setText("");
             this.infoLastDate.setText("Unknown");
         } else {
             this.infoPhoneNumber.setText(info.phoneNumber == null ? "" : info.phoneNumber);
-            this.infoLastDate.setText(info.lastBackupDate.toString());
+            this.infoLastDate.setText(info.lastBackupDate.toInstant().atZone(ZoneId.systemDefault()).format(DATE_FORMATTER));
         }
     }
 

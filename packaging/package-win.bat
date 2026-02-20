@@ -63,6 +63,21 @@ CALL "%JAVA_HOME%\bin\jpackage" ^
     --runtime-image "target\runtime-image" ^
     --module "%MAIN_MODULE%/%MAIN_CLASS%"
 
+REM Include portable media tools if available on the build machine
+SET MEDIA_TOOLS_SRC=%USERPROFILE%\.config\itunes-backup-explorer
+SET MEDIA_TOOLS_DEST=target\app-image\%APP_NAME%\app\media-tools
+
+IF EXIST "%MEDIA_TOOLS_SRC%\ffmpeg-portable" (
+    echo Including bundled ffmpeg...
+    XCOPY /E /I /Q "%MEDIA_TOOLS_SRC%\ffmpeg-portable" "%MEDIA_TOOLS_DEST%\ffmpeg-portable"
+)
+
+IF EXIST "%MEDIA_TOOLS_SRC%\imagemagick-portable" (
+    echo Including bundled ImageMagick...
+    XCOPY /E /I /Q "%MEDIA_TOOLS_SRC%\imagemagick-portable" "%MEDIA_TOOLS_DEST%\imagemagick-portable"
+)
+
+
 CALL "%JAVA_HOME%\bin\jpackage" ^
     --type msi ^
     --dest "target\installer" ^

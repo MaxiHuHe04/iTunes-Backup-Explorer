@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="me.maxih.itunes_backup_explorer.ui.AppsTabController">
+    <SplitPane dividerPositions="0.3" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+               AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <items>
+            <ListView fx:id="appListView" prefWidth="200.0"/>
+            <VBox spacing="10" styleClass="app-details">
+                <padding>
+                    <javafx.geometry.Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+                <Label text="App Name:" styleClass="app-label-title"/>
+                <Label fx:id="appNameLabel" text="--" styleClass="app-label-value"/>
+                <Label text="Bundle ID:" styleClass="app-label-title"/>
+                <Label fx:id="bundleIdLabel" text="--" styleClass="app-label-value"/>
+                <Label text="Version:" styleClass="app-label-title"/>
+                <Label fx:id="versionLabel" text="--" styleClass="app-label-value"/>
+                <Separator/>
+                <Label text="App Files:" styleClass="app-label-title"/>
+                <TreeView fx:id="appFilesTree" VBox.vgrow="ALWAYS"/>
+                <Button fx:id="exportAppButton" text="Export App Data" onAction="#exportAppData" maxWidth="Infinity"/>
+            </VBox>
+        </items>
+    </SplitPane>
+</AnchorPane>

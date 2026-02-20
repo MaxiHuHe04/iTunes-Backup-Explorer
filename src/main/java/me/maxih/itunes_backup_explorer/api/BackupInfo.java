@@ -41,7 +41,7 @@ public class BackupInfo {
             dict.getDict("Applications").orElseThrow().forTypedEntries(NSDictionary.class, (key, value) -> {
                 UtilDict info = new UtilDict(value);
                 ApplicationInfo app = new ApplicationInfo(
-                        info.getData("PlaceholderIcon").orElseThrow(),
+                        info.getData("PlaceholderIcon").orElse(null),
                         info.getData("iTunesMetadata").orElse(null),
                         info.getBoolean("IsDemotedApp").orElse(false),
                         info.getData("ApplicationSINF").orElse(null)

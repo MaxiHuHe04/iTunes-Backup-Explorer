@@ -4,12 +4,12 @@ import com.dd.plist.BinaryPropertyListWriter;
 import com.dd.plist.NSDictionary;
 import com.dd.plist.PropertyListFormatException;
 import com.dd.plist.PropertyListParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.security.InvalidKeyException;
 import java.sql.*;
@@ -19,6 +19,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class ITunesBackup {
+    private static final Logger logger = LoggerFactory.getLogger(ITunesBackup.class);
+
     public static List<ITunesBackup> getBackups(File backupRoot) {
         if (!backupRoot.isDirectory()) return new ArrayList<>();
 
@@ -32,7 +34,7 @@ public class ITunesBackup {
                     } catch (FileNotFoundException e) {
                         return null;
                     } catch (BackupReadException e) {
-                        e.printStackTrace();
+                        logger.error("Failed to parse backup manifest at {}", dir.getAbsolutePath(), e);
                         return null;
                     }
                 })
@@ -71,10 +73,10 @@ public class ITunesBackup {
             try {
                 this.loadInfo();
             } catch (BackupReadException e) {
-                e.printStackTrace();
+                logger.error("Failed to parse Info.plist", e);
             }
         } else {
-            System.out.println("The file '" + this.backupInfoFile.getAbsolutePath() + "' was not found. Trying to load the backup anyway.");
+            logger.warn("Info.plist not found: {}. Attempting to load backup anyway.", this.backupInfoFile.getAbsolutePath());
         }
 
         if (this.manifest.encrypted && this.manifest.getKeyBag().isEmpty())
@@ -117,6 +119,7 @@ public class ITunesBackup {
 
         try {
             this.decryptedDatabaseFile = File.createTempFile("decrypted-manifest", ".sqlite3");
+            this.decryptedDatabaseFile.deleteOnExit();
             this.manifest.getKeyBag().get().decryptFile(manifest.protectionClass, manifest.getManifestKey().orElseThrow(), this.manifestDBFile, this.decryptedDatabaseFile);
         } catch (FileNotFoundException | InvalidKeyException e) {
             throw new BackupReadException(e);
@@ -144,7 +147,7 @@ public class ITunesBackup {
                 this.databaseCon.close();
                 this.databaseCon = null;
             } catch (SQLException e) {
-                e.printStackTrace();
+                logger.error("Failed to re-encrypt database", e);
             }
         }
 
@@ -157,17 +160,17 @@ public class ITunesBackup {
         connectToDatabase();
     }
 
-    public boolean databaseConnected() {
+    public synchronized boolean databaseConnected() {
         try {
             return this.databaseCon != null && !this.databaseCon.isClosed();
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to check database connection", e);
             this.databaseCon = null;
             return false;
         }
     }
 
-    public void connectToDatabase() throws DatabaseConnectionException {
+    public synchronized void connectToDatabase() throws DatabaseConnectionException {
         if (databaseConnected()) return;
 
         if (this.decryptedDatabaseFile == null || !this.decryptedDatabaseFile.exists())
@@ -175,7 +178,7 @@ public class ITunesBackup {
 
         try {
             databaseCon = DriverManager.getConnection("jdbc:sqlite:" + decryptedDatabaseFile.getCanonicalPath());
-            System.out.println("Connection to the backup database of '" + this.manifest.deviceName + "' has been established.");
+            logger.info("Database connection established for device '{}'", this.manifest.deviceName);
         } catch (SQLException | IOException e) {
             throw new DatabaseConnectionException(e);
         }
@@ -185,51 +188,64 @@ public class ITunesBackup {
         if (!this.manifest.encrypted
                 || this.decryptedDatabaseFile == null
                 || !this.decryptedDatabaseFile.exists()
-                || this.decryptedDatabaseFile == this.manifestDBFile) return;
+                || this.decryptedDatabaseFile.equals(this.manifestDBFile)) return;
 
         try {
             if (databaseCon != null && !databaseCon.isClosed())
                 this.databaseCon.close();
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Failed to close database connection", e);
+        }
+
+        try {
+            long fileSize = this.decryptedDatabaseFile.length();
+            byte[] zeros = new byte[65536];
+            try (BufferedOutputStream bos = new BufferedOutputStream(
+                    new FileOutputStream(this.decryptedDatabaseFile), 65536)) {
+                long remaining = fileSize;
+                while (remaining > 0) {
+                    int toWrite = (int) Math.min(zeros.length, remaining);
+                    bos.write(zeros, 0, toWrite);
+                    remaining -= toWrite;
+                }
+            }
+        } catch (IOException e) {
+            logger.warn("Failed to overwrite temporary file with zeros: {}", this.decryptedDatabaseFile.getAbsolutePath());
         }
 
         if (!this.decryptedDatabaseFile.delete())
-            System.out.println("Could not delete temporary file " + this.decryptedDatabaseFile.getAbsolutePath());
+            logger.warn("Failed to delete temporary file: {}", this.decryptedDatabaseFile.getAbsolutePath());
     }
 
-    private List<BackupFile> queryFiles(String sql, StatementPreparation preparation) throws DatabaseConnectionException {
+    private synchronized List<BackupFile> queryFiles(String sql, StatementPreparation preparation) throws DatabaseConnectionException {
         if (!databaseConnected()) this.connectToDatabase();
 
-        try {
-            PreparedStatement statement = this.databaseCon.prepareStatement(sql);
+        try (PreparedStatement statement = this.databaseCon.prepareStatement(sql)) {
             preparation.prepare(statement);
 
-            ResultSet result = statement.executeQuery();
-
-            List<BackupFile> backupFiles = new ArrayList<>();
-            while (result.next()) {
-                try {
-                    backupFiles.add(new BackupFile(
-                            this,
-                            result.getString(1),
-                            result.getString(2),
-                            result.getString(3),
-                            result.getInt(4),
-                            (NSDictionary) PropertyListParser.parse(result.getBinaryStream(5))
-                    ));
-                } catch (BackupReadException e) {
-                    System.err.println(e.getMessage());
-                } catch (IOException | PropertyListFormatException | ParseException | ParserConfigurationException |
-                         SAXException e) {
-                    e.printStackTrace();
+            try (ResultSet result = statement.executeQuery()) {
+                List<BackupFile> backupFiles = new ArrayList<>();
+                while (result.next()) {
+                    try {
+                        backupFiles.add(new BackupFile(
+                                this,
+                                result.getString(1),
+                                result.getString(2),
+                                result.getString(3),
+                                result.getInt(4),
+                                (NSDictionary) PropertyListParser.parse(result.getBinaryStream(5))
+                        ));
+                    } catch (BackupReadException e) {
+                        logger.error("Failed to read backup: {}", e.getMessage());
+                    } catch (IOException | PropertyListFormatException | ParseException | ParserConfigurationException |
+                             SAXException e) {
+                        logger.error("Failed to query backups", e);
+                    }
                 }
+                return backupFiles;
             }
-
-            return backupFiles;
         } catch (SQLException e) {
-            e.printStackTrace();
-            return new ArrayList<>(0);
+            throw new DatabaseConnectionException(e);
         }
     }
 
@@ -243,8 +259,72 @@ public class ITunesBackup {
         );
     }
 
+    public List<BackupFile> searchFilesFullText(String domainFilter, String searchQuery) throws DatabaseConnectionException {
+        return this.queryFiles(
+                "SELECT * FROM files WHERE `domain` LIKE ? AND " +
+                        "(`fileID` LIKE ? ESCAPE '\\' OR `domain` LIKE ? ESCAPE '\\' OR `relativePath` LIKE ? ESCAPE '\\') " +
+                        "ORDER BY `flags`, `domain`, `relativePath`",
+                statement -> {
+                    statement.setString(1, domainFilter);
+                    statement.setString(2, searchQuery);
+                    statement.setString(3, searchQuery);
+                    statement.setString(4, searchQuery);
+                }
+        );
+    }
+
+    public List<BackupFile> searchFilesMultiPattern(String domainLike, List<String> relativePathPatterns) throws DatabaseConnectionException {
+        if (relativePathPatterns.isEmpty()) return new ArrayList<>(0);
+
+        StringBuilder sql = new StringBuilder("SELECT * FROM files WHERE `domain` LIKE ? AND (");
+        for (int i = 0; i < relativePathPatterns.size(); i++) {
+            if (i > 0) sql.append(" OR ");
+            sql.append("`relativePath` LIKE ? COLLATE NOCASE ESCAPE '\\'");
+        }
+        sql.append(") ORDER BY `flags`, `domain`, `relativePath`");
+
+        return this.queryFiles(sql.toString(), statement -> {
+            statement.setString(1, domainLike);
+            for (int i = 0; i < relativePathPatterns.size(); i++) {
+                statement.setString(i + 2, relativePathPatterns.get(i));
+            }
+        });
+    }
+
     public List<BackupFile> queryDomainRoots() throws DatabaseConnectionException {
-        return queryFiles("SELECT * FROM files WHERE `relativePath` = \"\" ORDER BY `domain`", statement -> {});
+        return queryFiles("SELECT * FROM files WHERE `relativePath` = ? ORDER BY `domain`",
+                statement -> statement.setString(1, ""));
+    }
+
+    public List<BackupFile> queryAllFiles() throws DatabaseConnectionException {
+        return queryFiles("SELECT * FROM files ORDER BY `domain`, `relativePath`", statement -> {});
+    }
+
+    public long[] queryFileStats() throws DatabaseConnectionException {
+        if (!databaseConnected()) this.connectToDatabase();
+        try (Statement stmt = this.databaseCon.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM files")) {
+            long count = rs.next() ? rs.getLong(1) : 0;
+            long size = calculateDirectorySize();
+            return new long[]{count, size};
+        } catch (SQLException e) {
+            throw new DatabaseConnectionException(e);
+        }
+    }
+
+    private long calculateDirectorySize() {
+        try (var paths = Files.walk(directory.toPath())) {
+            return paths
+                    .filter(Files::isRegularFile)
+                    .mapToLong(p -> {
+                        try { return Files.size(p); }
+                        catch (IOException e) { return 0; }
+                    })
+                    .sum();
+        } catch (IOException e) {
+            logger.warn("Failed to calculate backup size: {}", e.getMessage());
+            return -1;
+        }
     }
 
     public List<BackupFile> queryDomainFiles(boolean withDomainRoot, String... domains) throws DatabaseConnectionException {
@@ -291,29 +371,27 @@ public class ITunesBackup {
     }
 
     @SuppressWarnings({"SqlResolve", "SqlNoDataSourceInspection"})
-    public void updateFileInfo(String fileID, NSDictionary data) throws DatabaseConnectionException {
+    public void updateFileInfo(String fileID, NSDictionary data) throws DatabaseConnectionException, IOException {
         if (!databaseConnected()) this.connectToDatabase();
 
-        try {
-            PreparedStatement statement = this.databaseCon.prepareStatement("UPDATE Files SET file = ? WHERE fileID = ?");
+        try (PreparedStatement statement = this.databaseCon.prepareStatement("UPDATE Files SET file = ? WHERE fileID = ?")) {
             byte[] plist = BinaryPropertyListWriter.writeToArray(data);
             statement.setBytes(1, plist);
             statement.setString(2, fileID);
             statement.executeUpdate();
-        } catch (SQLException | IOException e) {
-            e.printStackTrace();
+        } catch (SQLException e) {
+            throw new DatabaseConnectionException(e);
         }
     }
 
     @SuppressWarnings({"SqlResolve", "SqlNoDataSourceInspection"})
     public void removeFileFromDatabase(String fileID) throws DatabaseConnectionException {
         if (!databaseConnected()) this.connectToDatabase();
-        try {
-            PreparedStatement statement = this.databaseCon.prepareStatement("DELETE FROM Files WHERE fileID = ?");
+        try (PreparedStatement statement = this.databaseCon.prepareStatement("DELETE FROM Files WHERE fileID = ?")) {
             statement.setString(1, fileID);
             statement.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DatabaseConnectionException(e);
         }
     }
 

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.maxih.itunes_backup_explorer.ui.MirrorTabController">
+    <StackPane AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+
+        <VBox fx:id="setupPane" alignment="CENTER" spacing="16" styleClass="device-no-device" visible="true" managed="true">
+            <Label text="Setup Required" styleClass="welcome-title"/>
+            <Label text="To mirror your iPhone screen, pymobiledevice3 needs to be installed." styleClass="welcome-subtitle" wrapText="true"/>
+            <Button fx:id="setupButton" text="Install Dependencies" onAction="#onSetupClicked"/>
+            <TextArea fx:id="setupLog" prefHeight="200" prefWidth="500" editable="false" wrapText="true" visible="false" managed="false" styleClass="mirror-setup-log"/>
+        </VBox>
+
+        <VBox fx:id="noDevicePane" alignment="CENTER" spacing="12" styleClass="device-no-device" visible="false" managed="false">
+            <Label text="No device connected" styleClass="welcome-title"/>
+            <Label text="Connect an iPhone via USB to mirror its screen" styleClass="welcome-subtitle" wrapText="true"/>
+            <!-- AirPlay temporarily disabled -->
+        </VBox>
+
+        <VBox fx:id="developerModePane" alignment="CENTER" spacing="16" styleClass="device-no-device" visible="false" managed="false">
+            <padding>
+                <Insets top="40" bottom="40" left="60" right="60"/>
+            </padding>
+            <Label text="Developer Mode Required" styleClass="welcome-title"/>
+            <Label fx:id="developerModeDescription" wrapText="true" textAlignment="CENTER" styleClass="welcome-subtitle" maxWidth="520"
+                   text="Screen mirroring requires Developer Mode to be enabled on the iPhone. Follow the steps below to enable it:"/>
+            <VBox spacing="8" alignment="CENTER_LEFT" maxWidth="480" styleClass="mirror-instructions-box">
+                <padding>
+                    <Insets top="12" bottom="12" left="20" right="20"/>
+                </padding>
+                <Label text="1. On the iPhone, open Settings" styleClass="info-value"/>
+                <Label text="2. Go to Privacy and Security" styleClass="info-value"/>
+                <Label text="3. Scroll to the bottom and tap Developer Mode" styleClass="info-value"/>
+                <Label text="4. Enable Developer Mode" styleClass="info-value"/>
+                <Label text="5. The iPhone will restart" styleClass="info-value"/>
+                <Label text="6. After restarting, confirm activation when prompted" styleClass="info-value"/>
+            </VBox>
+            <HBox spacing="10" alignment="CENTER">
+                <Button text="Reveal Option on iPhone" onAction="#onRevealDeveloperMode"/>
+                <Button fx:id="retryButton" text="Retry" onAction="#onRetryConnection"/>
+            </HBox>
+            <Label fx:id="developerModeHint" styleClass="info-label" wrapText="true" textAlignment="CENTER" maxWidth="480"
+                   text="If the option doesn't appear, click 'Reveal Option on iPhone' to make it visible in Settings."/>
+        </VBox>
+
+        <VBox fx:id="tunnelPane" alignment="CENTER" spacing="16" styleClass="device-no-device" visible="false" managed="false">
+            <padding>
+                <Insets top="40" bottom="40" left="60" right="60"/>
+            </padding>
+            <Label text="Tunnel Required (iOS 17+)" styleClass="welcome-title"/>
+            <Label wrapText="true" textAlignment="CENTER" styleClass="welcome-subtitle" maxWidth="520"
+                   text="Starting with iOS 17, screen capture requires an active communication tunnel. You can start it in two ways:"/>
+            <VBox spacing="8" alignment="CENTER_LEFT" maxWidth="520" styleClass="mirror-instructions-box">
+                <padding>
+                    <Insets top="12" bottom="12" left="20" right="20"/>
+                </padding>
+                <Label text="Option 1: Click the button below (requires administrator password)" styleClass="info-value" wrapText="true"/>
+                <Label text="Option 2: Run in terminal:" styleClass="info-value"/>
+                <TextField fx:id="tunnelCommandField" editable="false" styleClass="mirror-setup-log"
+                           text="sudo pymobiledevice3 remote tunneld"/>
+            </VBox>
+            <HBox spacing="10" alignment="CENTER">
+                <Button fx:id="startTunnelButton" text="Start Tunnel" onAction="#onStartTunnel"/>
+                <Button fx:id="retryTunnelButton" text="Retry" onAction="#onRetryConnection"/>
+            </HBox>
+            <Label fx:id="tunnelStatusLabel" styleClass="info-label" wrapText="true" textAlignment="CENTER" maxWidth="480"
+                   text="The tunnel must remain active while in use. Do not close the terminal if you started it via Option 2."/>
+        </VBox>
+
+        <VBox fx:id="viewPane" visible="false" managed="false" spacing="0">
+            <HBox styleClass="mirror-toolbar" alignment="CENTER_LEFT" spacing="10">
+                <padding>
+                    <Insets top="8" bottom="8" left="14" right="14"/>
+                </padding>
+                <Label fx:id="stateIndicator" text="Connecting" styleClass="mirror-state-badge"/>
+                <Label fx:id="fpsLabel" styleClass="info-label"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="wdaStatusLabel" styleClass="info-label"/>
+                <Button fx:id="airPlayButton" text="AirPlay" onAction="#onAirPlayClicked" visible="false" managed="false"/>
+                <Button fx:id="startStopButton" text="Stop" onAction="#onStartStopClicked"/>
+            </HBox>
+
+            <StackPane fx:id="screenContainer" VBox.vgrow="ALWAYS" styleClass="mirror-screen-container" style="-fx-background-color: #0a0a14;">
+                <ProgressIndicator fx:id="connectingSpinner" maxWidth="60" maxHeight="60" visible="true"/>
+                <ImageView fx:id="screenView" preserveRatio="true" visible="false" styleClass="mirror-screen"/>
+                <Label fx:id="statusLabel" styleClass="mirror-status-label" visible="false" managed="false" wrapText="true"/>
+            </StackPane>
+        </VBox>
+
+    </StackPane>
+</AnchorPane>

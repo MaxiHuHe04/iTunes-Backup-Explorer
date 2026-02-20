@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.maxih.itunes_backup_explorer.ui.DeviceTabController">
+    <StackPane AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+        <VBox fx:id="noDevicePane" alignment="CENTER" spacing="12" styleClass="device-no-device">
+            <Label text="No device connected" styleClass="welcome-title"/>
+            <Label text="Connect an iPhone via USB and trust this computer" styleClass="welcome-subtitle" wrapText="true"/>
+            <Label fx:id="libimobiledeviceWarning" text="libimobiledevice not found. See https://github.com/libimobiledevice/libimobiledevice for installation instructions."
+                   styleClass="device-warning" visible="false" managed="false" wrapText="true"/>
+        </VBox>
+
+        <ScrollPane fx:id="deviceScrollPane" visible="false" managed="false" fitToWidth="true"
+                    style="-fx-background-color: transparent;"
+                    AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+            <VBox spacing="20">
+                <padding>
+                    <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+                </padding>
+
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label fx:id="deviceNameLabel" styleClass="device-header-name"/>
+                    <Label fx:id="deviceModelLabel" styleClass="device-header-model"/>
+                </HBox>
+
+                <VBox spacing="10">
+                    <Label text="Device Information" styleClass="section-title">
+                        <VBox.margin>
+                            <Insets bottom="5.0"/>
+                        </VBox.margin>
+                    </Label>
+                    <GridPane hgap="20" vgap="10">
+                        <columnConstraints>
+                            <ColumnConstraints hgrow="NEVER" minWidth="150" prefWidth="150"/>
+                            <ColumnConstraints hgrow="ALWAYS" minWidth="300"/>
+                        </columnConstraints>
+
+                        <Label text="Name" styleClass="info-label" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                        <Label fx:id="infoName" styleClass="info-value" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                        <Label text="Model" styleClass="info-label" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                        <Label fx:id="infoModel" styleClass="info-value" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                        <Label text="iOS" styleClass="info-label" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                        <Label fx:id="infoiOS" styleClass="info-value" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                        <Label text="Serial" styleClass="info-label" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                        <TextField fx:id="infoSerial" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                            <font>
+                                <Font name="Monospaced Regular" size="11.0"/>
+                            </font>
+                        </TextField>
+
+                        <Label text="UDID" styleClass="info-label" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                        <TextField fx:id="infoUdid" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="4">
+                            <font>
+                                <Font name="Monospaced Regular" size="11.0"/>
+                            </font>
+                        </TextField>
+
+                        <Label text="Phone" styleClass="info-label" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+                        <Label fx:id="infoPhone" styleClass="info-value" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+
+                        <Label text="Wi-Fi MAC" styleClass="info-label" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
+                        <Label fx:id="infoWifiMac" styleClass="info-value" GridPane.columnIndex="1" GridPane.rowIndex="6"/>
+                    </GridPane>
+                </VBox>
+
+                <VBox spacing="10" styleClass="device-section">
+                    <Label text="Battery" styleClass="section-title">
+                        <VBox.margin>
+                            <Insets bottom="5.0"/>
+                        </VBox.margin>
+                    </Label>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <ProgressBar fx:id="batteryBar" progress="0" prefWidth="200" styleClass="device-battery-bar"/>
+                        <Label fx:id="batteryPercentLabel" styleClass="device-battery-percent"/>
+                        <Label fx:id="batteryStatusLabel" styleClass="info-label"/>
+                    </HBox>
+                </VBox>
+
+                <VBox spacing="10" styleClass="device-section">
+                    <Label text="Storage" styleClass="section-title">
+                        <VBox.margin>
+                            <Insets bottom="5.0"/>
+                        </VBox.margin>
+                    </Label>
+                    <ProgressBar fx:id="storageBar" progress="0" prefHeight="20" maxWidth="Infinity" styleClass="device-storage-bar"/>
+                    <Label fx:id="storageInfoLabel" styleClass="info-label"/>
+                </VBox>
+
+                <VBox spacing="10" VBox.vgrow="ALWAYS">
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="Installed Apps" styleClass="section-title"/>
+                        <Label fx:id="appCountLabel" styleClass="info-label"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <HBox spacing="4" alignment="CENTER_LEFT">
+                            <ToggleButton fx:id="filterAll" text="All" styleClass="quick-filter"/>
+                            <ToggleButton fx:id="filterUser" text="User" styleClass="quick-filter"/>
+                            <ToggleButton fx:id="filterSystem" text="System" styleClass="quick-filter"/>
+                        </HBox>
+                        <TextField fx:id="appSearchField" promptText="Search apps..." prefWidth="200"/>
+                        <Button fx:id="uninstallButton" text="Uninstall" onAction="#uninstallApp" disable="true"/>
+                    </HBox>
+                    <TableView fx:id="appsTable" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="nameColumn" text="Name" prefWidth="200"/>
+                            <TableColumn fx:id="bundleIdColumn" text="Bundle ID" prefWidth="250"/>
+                            <TableColumn fx:id="versionColumn" text="Version" prefWidth="100"/>
+                            <TableColumn fx:id="typeColumn" text="Type" prefWidth="80"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </VBox>
+        </ScrollPane>
+    </StackPane>
+</AnchorPane>

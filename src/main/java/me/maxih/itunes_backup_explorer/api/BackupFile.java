@@ -3,6 +3,8 @@ package me.maxih.itunes_backup_explorer.api;
 import com.dd.plist.*;
 import me.maxih.itunes_backup_explorer.util.BackupPathUtils;
 import me.maxih.itunes_backup_explorer.util.UtilDict;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -15,6 +17,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 public class BackupFile {
+    private static final Logger logger = LoggerFactory.getLogger(BackupFile.class);
     public final ITunesBackup backup;
     public final UtilDict data;
     public final String fileID;
@@ -85,17 +88,26 @@ public class BackupFile {
     }
 
     private <T extends NSObject> T getObject(Class<T> type, UID uid) throws NoSuchElementException {
-        byte index = uid.getBytes()[0];
+        int index = uidToIndex(uid);
+        if (index < 0 || index >= this.objects.length) throw new NoSuchElementException();
         Object obj = this.objects[index];
         if (type.isInstance(obj)) return type.cast(obj);
         throw new NoSuchElementException();
     }
 
     private void setObject(UID uid, NSObject object) {
-        byte index = uid.getBytes()[0];
+        int index = uidToIndex(uid);
         this.objects[index] = object;
-        // theoretically not necessary, but don't rely on the array never being cloned
         this.data.put("$objects", new NSArray(this.objects));
+    }
+
+    static int uidToIndex(UID uid) {
+        byte[] bytes = uid.getBytes();
+        int index = 0;
+        for (byte b : bytes) {
+            index = (index << 8) | (b & 0xFF);
+        }
+        return index;
     }
 
     public FileType getFileType() {
@@ -162,6 +174,11 @@ public class BackupFile {
 
     public void extract(File destination)
             throws IOException, BackupReadException, NotUnlockedException, UnsupportedCryptoException, UnsupportedOperationException {
+        extract(destination, true);
+    }
+
+    public void extract(File destination, boolean preserveTimestamps)
+            throws IOException, BackupReadException, NotUnlockedException, UnsupportedCryptoException, UnsupportedOperationException {
 
         switch (this.fileType) {
             case DIRECTORY:
@@ -178,14 +195,23 @@ public class BackupFile {
                         throw new BackupReadException(e);
                     }
 
-                    //noinspection ResultOfMethodCallIgnored
-                    this.properties.get(NSNumber.class, "LastModified")
-                            .map(NSNumber::longValue)
-                            .map(seconds -> seconds * 1000)
-                            .ifPresent(destination::setLastModified);
+                    if (preserveTimestamps) {
+                        //noinspection ResultOfMethodCallIgnored
+                        this.properties.get(NSNumber.class, "LastModified")
+                                .map(NSNumber::longValue)
+                                .map(seconds -> seconds * 1000)
+                                .ifPresent(destination::setLastModified);
+                    }
                 } else {
                     Files.copy(this.contentFile.toPath(), destination.toPath(),
                             StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+
+                    if (preserveTimestamps) {
+                        this.properties.get(NSNumber.class, "LastModified")
+                                .map(NSNumber::longValue)
+                                .map(seconds -> seconds * 1000)
+                                .ifPresent(destination::setLastModified);
+                    }
                 }
                 break;
             case SYMBOLIC_LINK:
@@ -195,6 +221,11 @@ public class BackupFile {
     }
 
     public void extractToFolder(File destinationFolder, boolean withRelativePath)
+            throws IOException, BackupReadException, NotUnlockedException, UnsupportedCryptoException, UnsupportedOperationException {
+        extractToFolder(destinationFolder, withRelativePath, true);
+    }
+
+    public void extractToFolder(File destinationFolder, boolean withRelativePath, boolean preserveTimestamps)
             throws IOException, BackupReadException, NotUnlockedException, UnsupportedCryptoException, UnsupportedOperationException {
 
         String relative;
@@ -206,17 +237,21 @@ public class BackupFile {
                 relative = withRelativePath
                         ? Paths.get(this.domain, BackupPathUtils.cleanPath(this.relativePath)).toString()
                         : BackupPathUtils.cleanPath(this.getFileName());
-                System.out.println("Continuing with invalid characters replaced: " + this.getFileName() + " -> " + relative);
+                logger.warn("Continuing with invalid characters replaced: {} -> {}", this.getFileName(), relative);
             } catch (InvalidPathException e1) {
                 throw new IOException("Invalid character in filename, failed to replace", e1);
             }
         }
         File destination = new File(destinationFolder.getAbsolutePath(), relative);
+        if (!destination.getCanonicalPath().startsWith(destinationFolder.getCanonicalPath() + File.separator)
+                && !destination.getCanonicalPath().equals(destinationFolder.getCanonicalPath())) {
+            throw new IOException("Path traversal detected: " + relative);
+        }
         if (destination.exists() && this.fileType != FileType.DIRECTORY)
             throw new FileAlreadyExistsException(destination.getAbsolutePath());
 
         Files.createDirectories(destination.getParentFile().toPath());
-        this.extract(destination);
+        this.extract(destination, preserveTimestamps);
     }
 
     public void replaceWith(File newFile) throws IOException, BackupReadException, UnsupportedCryptoException, NotUnlockedException, DatabaseConnectionException {
@@ -261,7 +296,7 @@ public class BackupFile {
         try {
             this.backupOriginal(true);
         } catch (FileNotFoundException e) {
-            System.out.printf("Warning: Deleted backup file '%s' did not have a content file%n", this.relativePath);
+            logger.warn("Deleted backup file '{}' had no content file", this.relativePath);
         }
         this.backup.removeFileFromDatabase(this.fileID);
     }

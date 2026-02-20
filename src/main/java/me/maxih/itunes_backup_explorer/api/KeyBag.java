@@ -3,6 +3,8 @@ package me.maxih.itunes_backup_explorer.api;
 import com.dd.plist.NSData;
 import me.maxih.itunes_backup_explorer.util.BackupFilePaddingFixer;
 import org.bouncycastle.crypto.digests.SHA1Digest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
 import org.bouncycastle.crypto.params.KeyParameter;
 
@@ -25,11 +27,15 @@ import java.util.Map;
 import java.util.Set;
 
 public class KeyBag {
+    private static final Logger logger = LoggerFactory.getLogger(KeyBag.class);
     private static final Set<String> CLASS_KEY_TAGS = Set.of("CLAS", "WRAP", "WPKY", "KTYP", "PBKY");
     private static final int WRAP_DEVICE = 1;
     private static final int WRAP_PASSCODE = 2;
 
     private static final int BUFFER_SIZE = 16384;
+
+    // Required by Apple's backup format - DO NOT change
+    private static final byte[] APPLE_BACKUP_ZERO_IV = new byte[16];
 
     public int type;
     public byte[] uuid;
@@ -37,7 +43,7 @@ public class KeyBag {
     public final Map<ByteBuffer, Map<String, byte[]>> classKeys = new HashMap<>();
     public final Map<String, byte[]> attrs = new HashMap<>();
 
-    private boolean unlocked = false;
+    private volatile boolean unlocked = false;
 
     public KeyBag(NSData data) throws BackupReadException {
         this.parseBinaryBlob(data);
@@ -70,11 +76,15 @@ public class KeyBag {
                     buffer.get(this.uuid);
                 } else if (tag.equals("WRAP") && this.wrap == null) {
                     int length = buffer.getInt();
+                    if (length < 0 || length > buffer.remaining())
+                        throw new BackupReadException("Invalid size in key bag: " + length);
 
                     this.wrap = new byte[length];
                     buffer.get(this.wrap);
                 } else if (tag.equals("UUID")) {
                     int length = buffer.getInt();
+                    if (length < 0 || length > buffer.remaining())
+                        throw new BackupReadException("Invalid size in key bag: " + length);
 
                     byte[] value = new byte[length];
                     buffer.get(value);
@@ -86,6 +96,8 @@ public class KeyBag {
                     currentClassKey.put("CLAS", value);
                 } else if (CLASS_KEY_TAGS.contains(tag)) {
                     int length = buffer.getInt();
+                    if (length < 0 || length > buffer.remaining())
+                        throw new BackupReadException("Invalid size in key bag: " + length);
 
                     byte[] value = new byte[length];
                     buffer.get(value);
@@ -93,6 +105,8 @@ public class KeyBag {
                     if (currentClassKey != null) currentClassKey.put(tag, value);
                 } else {
                     int length = buffer.getInt();
+                    if (length < 0 || length > buffer.remaining())
+                        throw new BackupReadException("Invalid size in key bag: " + length);
 
                     byte[] value = new byte[length];
                     buffer.get(value);
@@ -113,44 +127,53 @@ public class KeyBag {
         return !this.unlocked;
     }
 
-    public void unlock(String passcode) throws InvalidKeyException {
+    public void unlock(char[] passcode) throws InvalidKeyException, UnsupportedCryptoException {
         try {
             byte[] salt1 = this.attrs.get("DPSL");
             int iterations1 = ByteBuffer.wrap(this.attrs.get("DPIC")).getInt();
-            KeySpec spec1 = new PBEKeySpec(passcode.toCharArray(), salt1, iterations1, 32 * 8);
+            PBEKeySpec spec1 = new PBEKeySpec(passcode, salt1, iterations1, 32 * 8);
 
-            SecretKeyFactory f1 = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-            SecretKey key1 = f1.generateSecret(spec1);
+            byte[] keyEncryptionKey;
+            try {
+                SecretKeyFactory f1 = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+                SecretKey key1 = f1.generateSecret(spec1);
 
-            byte[] salt2 = this.attrs.get("SALT");
-            int iterations2 = ByteBuffer.wrap(this.attrs.get("ITER")).getInt();
-//            KeySpec spec2 = new PBEKeySpec(StandardCharsets.ISO_8859_1.decode(ByteBuffer.wrap(key1.getEncoded())).array(), salt2, iterations2, 32 * 8);
+                byte[] salt2 = this.attrs.get("SALT");
+                int iterations2 = ByteBuffer.wrap(this.attrs.get("ITER")).getInt();
 
-//            SecretKeyFactory f2 = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-//            SecretKey keyEncryptionKey = f2.generateSecret(spec2);
-
-            // PBEKeySpec doesn't accept byte arrays and converting doesn't really work apparently
-            PKCS5S2ParametersGenerator gen = new PKCS5S2ParametersGenerator(new SHA1Digest());
-            gen.init(key1.getEncoded(), salt2, iterations2);
-            byte[] keyEncryptionKey = ((KeyParameter) gen.generateDerivedParameters(32 * 8)).getKey();
-
-            Cipher c = Cipher.getInstance("AESWrap");
-
-            for (Map<String, byte[]> classKey : this.classKeys.values()) {
-                if (!classKey.containsKey("WPKY")) continue;
-                int wrap = ByteBuffer.wrap(classKey.get("WRAP")).getInt();
-                if ((wrap & WRAP_PASSCODE) != 0) {
-                    c.init(Cipher.UNWRAP_MODE, new SecretKeySpec(keyEncryptionKey, "AES"));
-                    Key contentEncryptionKey = c.unwrap(classKey.get("WPKY"), "AES", Cipher.SECRET_KEY);
-                    if (contentEncryptionKey != null) {
-                        classKey.put("KEY", contentEncryptionKey.getEncoded());
-                    }
-                }
+                PKCS5S2ParametersGenerator gen = new PKCS5S2ParametersGenerator(new SHA1Digest());
+                gen.init(key1.getEncoded(), salt2, iterations2);
+                keyEncryptionKey = ((KeyParameter) gen.generateDerivedParameters(32 * 8)).getKey();
+            } finally {
+                spec1.clearPassword();
             }
 
-            this.unlocked = true;
+            try {
+                Cipher c = Cipher.getInstance("AESWrap");
+
+                int unwrappedCount = 0;
+                for (Map<String, byte[]> classKey : this.classKeys.values()) {
+                    if (!classKey.containsKey("WPKY")) continue;
+                    int wrap = ByteBuffer.wrap(classKey.get("WRAP")).getInt();
+                    if ((wrap & WRAP_PASSCODE) != 0) {
+                        c.init(Cipher.UNWRAP_MODE, new SecretKeySpec(keyEncryptionKey, "AES"));
+                        Key contentEncryptionKey = c.unwrap(classKey.get("WPKY"), "AES", Cipher.SECRET_KEY);
+                        if (contentEncryptionKey != null) {
+                            classKey.put("KEY", contentEncryptionKey.getEncoded());
+                            unwrappedCount++;
+                        }
+                    }
+                }
+
+                if (unwrappedCount == 0) throw new InvalidKeyException("No class keys were unwrapped");
+                this.unlocked = true;
+            } finally {
+                Arrays.fill(keyEncryptionKey, (byte) 0);
+            }
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException e) {
-            e.printStackTrace();
+            throw new UnsupportedCryptoException(e);
+        } finally {
+            Arrays.fill(passcode, '\0');
         }
     }
 
@@ -183,7 +206,7 @@ public class KeyBag {
 
         try {
             Cipher c = Cipher.getInstance(cipherMode);
-            c.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(new byte[16]));
+            c.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(APPLE_BACKUP_ZERO_IV));
             return new CipherInputStream(source, c);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException e) {
             throw new UnsupportedCryptoException(e);
@@ -206,7 +229,7 @@ public class KeyBag {
             outputStream.flush();
 
             if (size != -1L && fileOutputStream.getChannel().size() != size) {
-                System.out.printf("Warning: File size from database doesn't match actual decrypted size - expected %9d, got %9d (%s)%n", size, fileOutputStream.getChannel().size(), destination.getPath());
+                logger.warn("Database file size does not match decrypted size - expected {}, got {} ({})", size, fileOutputStream.getChannel().size(), destination.getPath());
             }
 
             BackupFilePaddingFixer.tryFixPadding(destination);
@@ -225,12 +248,12 @@ public class KeyBag {
             outputStream.flush();
 
             if (size != -1L && fileOutputStream.getChannel().size() != size) {
-                System.out.printf("Warning: File size from database doesn't match actual decrypted size - expected %9d, got %9d (%s)%n", size, fileOutputStream.getChannel().size(), destination.getPath());
+                logger.warn("Database file size does not match decrypted size - expected {}, got {} ({})", size, fileOutputStream.getChannel().size(), destination.getPath());
             }
         } catch (IOException e) {
             if (e.getCause() instanceof BadPaddingException) {
-                System.out.println("Warning: Bad padding - " + e.getMessage() + " (" + destination.getPath() + ")");
-                System.out.println("Trying to decrypt again without padding...");
+                logger.warn("Bad padding - {} ({})", e.getMessage(), destination.getPath());
+                logger.debug("Retrying decryption without padding...");
                 decryptFilePaddingFallback(protectionClass, persistentKey, source, destination, size);
             } else {
                 throw e;
@@ -251,7 +274,7 @@ public class KeyBag {
 
         try {
             Cipher c = Cipher.getInstance("AES/CBC/PKCS5Padding");
-            c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(new byte[16]));
+            c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(APPLE_BACKUP_ZERO_IV));
             return new CipherOutputStream(destination, c);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException e) {
             throw new UnsupportedCryptoException(e);

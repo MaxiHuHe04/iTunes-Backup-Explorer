@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="me.maxih.itunes_backup_explorer.ui.MediaTabController">
+    <VBox AnchorPane.topAnchor="0" AnchorPane.bottomAnchor="0"
+          AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0">
+
+        <HBox spacing="10" alignment="CENTER_LEFT" styleClass="media-toolbar">
+            <padding><Insets top="10" bottom="10" left="14" right="14"/></padding>
+            <ToggleButton fx:id="filterAll" text="All" styleClass="quick-filter" selected="true">
+                <toggleGroup><ToggleGroup fx:id="filterGroup"/></toggleGroup>
+            </ToggleButton>
+            <ToggleButton fx:id="filterPhotos" text="Photos" styleClass="quick-filter" toggleGroup="$filterGroup"/>
+            <ToggleButton fx:id="filterVideos" text="Videos" styleClass="quick-filter" toggleGroup="$filterGroup"/>
+            <Separator orientation="VERTICAL" prefHeight="20" styleClass="toolbar-separator">
+                <HBox.margin><Insets left="4" right="4"/></HBox.margin>
+            </Separator>
+            <Label fx:id="resultsCountLabel" text="0 items" styleClass="info-label"/>
+        </HBox>
+
+        <SplitPane fx:id="splitPane" dividerPositions="0.65" VBox.vgrow="ALWAYS">
+            <VBox styleClass="media-grid-wrapper">
+                <HBox spacing="10" alignment="CENTER_RIGHT" styleClass="media-pagination-bar">
+                    <padding><Insets top="6" bottom="6" left="14" right="14"/></padding>
+                    <Button fx:id="prevPageBtn" text="&lt; Prev" onAction="#prevPage" styleClass="quick-filter"/>
+                    <Label fx:id="pageInfoLabel" text="Page 0 of 0" styleClass="info-label">
+                        <HBox.margin><Insets left="4" right="4"/></HBox.margin>
+                    </Label>
+                    <Button fx:id="nextPageBtn" text="Next &gt;" onAction="#nextPage" styleClass="quick-filter"/>
+                </HBox>
+                <ScrollPane fx:id="gridScrollPane" fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS" styleClass="media-grid-scroll">
+                    <FlowPane fx:id="mediaGrid" hgap="10" vgap="10" styleClass="media-grid">
+                        <padding><Insets top="14" bottom="14" left="14" right="14"/></padding>
+                    </FlowPane>
+                </ScrollPane>
+            </VBox>
+
+            <VBox spacing="12" styleClass="media-preview-panel">
+                <padding><Insets top="14" bottom="14" left="14" right="14"/></padding>
+                <StackPane fx:id="previewContainer" VBox.vgrow="ALWAYS" alignment="CENTER" styleClass="media-preview-container">
+                    <ImageView fx:id="previewImage" preserveRatio="true" smooth="true" cache="true"/>
+                </StackPane>
+                <VBox spacing="4">
+                    <Label fx:id="fileNameLabel" styleClass="section-title" wrapText="true"/>
+                    <Label fx:id="fileSizeLabel" styleClass="info-label"/>
+                    <Label fx:id="fileDateLabel" styleClass="info-label"/>
+                    <Label fx:id="fileDomainLabel" styleClass="info-label"/>
+                    <Label fx:id="filePathLabel" styleClass="info-label" wrapText="true"/>
+                </VBox>
+                <HBox spacing="8">
+                    <Button fx:id="saveBtn" text="Save" onAction="#saveFile" disable="true"/>
+                    <Button fx:id="openBtn" text="Open" onAction="#openFile" disable="true"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="exportAllBtn" text="Export All" onAction="#exportAll"/>
+                </HBox>
+            </VBox>
+        </SplitPane>
+    </VBox>
+</AnchorPane>

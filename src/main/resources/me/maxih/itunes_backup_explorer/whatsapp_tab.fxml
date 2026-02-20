@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="me.maxih.itunes_backup_explorer.ui.WhatsAppTabController">
+    <VBox AnchorPane.topAnchor="0" AnchorPane.bottomAnchor="0"
+          AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0">
+
+        <SplitPane fx:id="splitPane" dividerPositions="0.38" VBox.vgrow="ALWAYS">
+
+            <VBox styleClass="whatsapp-chat-list-pane">
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <padding><Insets top="8" bottom="6" left="10" right="10"/></padding>
+                    <TextField fx:id="chatSearchField" promptText="Search conversations..." HBox.hgrow="ALWAYS"/>
+                </HBox>
+                <HBox spacing="6" alignment="CENTER_LEFT">
+                    <padding><Insets top="0" bottom="6" left="10" right="10"/></padding>
+                    <ToggleButton fx:id="filterAll" text="All" styleClass="quick-filter" selected="true">
+                        <toggleGroup><ToggleGroup fx:id="chatFilterGroup"/></toggleGroup>
+                    </ToggleButton>
+                    <ToggleButton fx:id="filterPrivate" text="Private" styleClass="quick-filter" toggleGroup="$chatFilterGroup"/>
+                    <ToggleButton fx:id="filterGroups" text="Groups" styleClass="quick-filter" toggleGroup="$chatFilterGroup"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="chatCountLabel" text="0 chats" styleClass="info-label"/>
+                </HBox>
+                <ListView fx:id="chatListView" VBox.vgrow="ALWAYS" styleClass="whatsapp-chat-list"/>
+            </VBox>
+
+            <VBox styleClass="whatsapp-messages-pane">
+                <VBox fx:id="conversationHeaderBox" styleClass="whatsapp-conversation-header" spacing="2" managed="false" visible="false">
+                    <padding><Insets top="8" bottom="8" left="12" right="12"/></padding>
+                    <Label fx:id="conversationHeader" styleClass="whatsapp-header-name"/>
+                    <Label fx:id="conversationInfo" styleClass="whatsapp-header-info"/>
+                </VBox>
+
+                <StackPane VBox.vgrow="ALWAYS">
+                    <ScrollPane fx:id="messagesScrollPane" fitToWidth="true" hbarPolicy="NEVER" styleClass="whatsapp-messages-scroll">
+                        <VBox fx:id="messagesContainer" spacing="4">
+                            <padding><Insets top="8" bottom="8" left="8" right="8"/></padding>
+                        </VBox>
+                    </ScrollPane>
+                    <VBox fx:id="emptyStatePane" alignment="CENTER" spacing="8" mouseTransparent="true">
+                        <Label text="Select a conversation to view messages" styleClass="whatsapp-empty-state"/>
+                    </VBox>
+                </StackPane>
+
+                <HBox spacing="8" alignment="CENTER_LEFT" styleClass="whatsapp-messages-toolbar">
+                    <padding><Insets top="6" bottom="6" left="12" right="12"/></padding>
+                    <Button fx:id="loadOlderButton" text="Load older messages" onAction="#onLoadOlder" disable="true" styleClass="quick-filter"/>
+                    <Label fx:id="messageCountLabel" text="" styleClass="info-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <TextField fx:id="messageSearchField" promptText="Search messages..." prefWidth="180" onAction="#onSearchMessages"/>
+                    <Button fx:id="diagnosticsButton" text="Diagnostics" onAction="#onDiagnostics" disable="true" styleClass="quick-filter"/>
+                    <Button fx:id="exportButton" text="Export" onAction="#onExportChat" disable="true" styleClass="quick-filter"/>
+                </HBox>
+            </VBox>
+
+        </SplitPane>
+    </VBox>
+</AnchorPane>

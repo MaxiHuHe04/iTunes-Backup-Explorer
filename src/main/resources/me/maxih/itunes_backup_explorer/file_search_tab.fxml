@@ -5,13 +5,34 @@
 <AnchorPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
             fx:controller="me.maxih.itunes_backup_explorer.ui.FileSearchTabController">
     <TableView fx:id="filesTable" AnchorPane.bottomAnchor="50.0" AnchorPane.leftAnchor="0.0"
-               AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="50.0"/>
-    <Button layoutX="527.0" layoutY="14.0" mnemonicParsing="false" onAction="#searchFiles" prefHeight="25.0"
-            prefWidth="60.0" text="Search" AnchorPane.rightAnchor="14.0" AnchorPane.topAnchor="14.0"/>
-    <TextField fx:id="domainQueryField" layoutX="14.0" layoutY="14.0" prefHeight="25.0" prefWidth="200.0"
-               promptText="Domain" AnchorPane.leftAnchor="14.0"/>
-    <TextField fx:id="relativePathQueryField" layoutX="232.0" layoutY="14.0" prefHeight="25.0" prefWidth="200.0"
-               promptText="Relative Path"/>
-    <Button layoutX="535.0" layoutY="407.0" mnemonicParsing="false" onAction="#exportMatching" prefHeight="25.0"
-            prefWidth="110.0" text="Export matching" AnchorPane.bottomAnchor="14.0" AnchorPane.rightAnchor="14.0"/>
+               AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="100.0"/>
+
+    <VBox spacing="8" AnchorPane.leftAnchor="14.0" AnchorPane.topAnchor="14.0" AnchorPane.rightAnchor="14.0">
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Button fx:id="allFilesBtn" styleClass="quick-filter" text="All Files" onAction="#quickFilterAllFiles"/>
+            <Button fx:id="photosBtn" styleClass="quick-filter" text="Photos" onAction="#quickFilterPhotos"/>
+            <Button fx:id="videosBtn" styleClass="quick-filter" text="Videos" onAction="#quickFilterVideos"/>
+            <Button fx:id="whatsappBtn" styleClass="quick-filter" text="WhatsApp" onAction="#quickFilterWhatsApp"/>
+            <Button fx:id="contactsBtn" styleClass="quick-filter" text="Contacts" onAction="#quickFilterContacts"/>
+            <Button fx:id="messagesBtn" styleClass="quick-filter" text="Messages" onAction="#quickFilterMessages"/>
+            <Button fx:id="notesBtn" styleClass="quick-filter" text="Notes" onAction="#quickFilterNotes"/>
+            <Button fx:id="voiceMemosBtn" styleClass="quick-filter" text="Voice Memos" onAction="#quickFilterVoiceMemos"/>
+        </HBox>
+
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <ComboBox fx:id="domainComboBox" editable="true" prefHeight="25.0" prefWidth="250.0" promptText="All Domains"/>
+            <TextField fx:id="relativePathQueryField" prefHeight="25.0" prefWidth="250.0" promptText="Search (name, path, domain, hash...)"/>
+            <ComboBox fx:id="fileTypeComboBox" prefHeight="25.0" prefWidth="180.0" promptText="All Types"/>
+            <Button mnemonicParsing="false" onAction="#searchFiles" prefHeight="25.0" prefWidth="80.0" text="Search"/>
+            <Label fx:id="searchResultsCount" text="0 results" styleClass="info-label"/>
+        </HBox>
+    </VBox>
+
+    <HBox alignment="CENTER_LEFT" spacing="10" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="14.0">
+        <Label fx:id="searchHint" styleClass="search-hint"
+               text="Results match across all columns — a file may appear because the term was found in its path or domain, not just in the Name column."
+               visible="false" managed="false" wrapText="true" maxWidth="700"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button mnemonicParsing="false" onAction="#exportMatching" prefHeight="25.0" prefWidth="110.0" text="Export matching"/>
+    </HBox>
 </AnchorPane>

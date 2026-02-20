@@ -1,56 +1,86 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox prefHeight="500.0" prefWidth="800.0" stylesheets="@stylesheet.css"
+<VBox prefHeight="800.0" prefWidth="1400.0" stylesheets="@stylesheet.css"
       xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="me.maxih.itunes_backup_explorer.ui.WindowController">
-    <BorderPane VBox.vgrow="ALWAYS">
-        <top>
-            <MenuBar BorderPane.alignment="CENTER">
-                <Menu mnemonicParsing="false" text="File">
-                    <MenuItem mnemonicParsing="false" onAction="#fileOpenBackup" text="Open backup…"/>
-                    <SeparatorMenuItem mnemonicParsing="false"/>
-                    <MenuItem mnemonicParsing="false" onAction="#openPreferences" text="Preferences…"/>
-                    <SeparatorMenuItem mnemonicParsing="false"/>
-                    <MenuItem mnemonicParsing="false" onAction="#quit" text="Quit"/>
-                </Menu>
-                <Menu disable="true" mnemonicParsing="false" text="Edit">
-                    <MenuItem mnemonicParsing="false" text="Undo"/>
-                    <MenuItem mnemonicParsing="false" text="Redo"/>
-                    <SeparatorMenuItem mnemonicParsing="false"/>
-                    <MenuItem mnemonicParsing="false" text="Select All"/>
-                    <MenuItem mnemonicParsing="false" text="Unselect All"/>
-                </Menu>
-                <Menu mnemonicParsing="false" text="Help">
-                    <MenuItem mnemonicParsing="false" text="About iTunes Backup Explorer"/>
-                </Menu>
-            </MenuBar>
-        </top>
-        <left>
-            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" prefWidth="200.0" styleClass="sidebar"
-                        BorderPane.alignment="CENTER">
-                <VBox fx:id="backupSidebarBox" prefWidth="100.0">
-                </VBox>
-            </ScrollPane>
-        </left>
-        <center>
-            <TabPane fx:id="tabPane" prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE"
-                     BorderPane.alignment="CENTER">
-                <Tab text="Information">
-                    <fx:include fx:id="infoTabPage" source="info_tab.fxml"/>
-                </Tab>
-                <Tab text="Files">
-                    <fx:include fx:id="filesTabPage" source="files_tab.fxml"/>
-                </Tab>
-                <Tab text="File Search">
-                    <fx:include fx:id="fileSearchTabPage" source="file_search_tab.fxml"/>
-                </Tab>
-                <Tab text="Apps">
-                    <AnchorPane/>
-                </Tab>
-            </TabPane>
-        </center>
-    </BorderPane>
+    <StackPane VBox.vgrow="ALWAYS">
+        <BorderPane>
+            <top>
+                <MenuBar BorderPane.alignment="CENTER">
+                    <Menu mnemonicParsing="false" text="File">
+                        <MenuItem mnemonicParsing="false" onAction="#fileOpenBackup" text="Open backup..."/>
+                        <MenuItem mnemonicParsing="false" onAction="#createBackup" text="Create backup..."/>
+                        <MenuItem mnemonicParsing="false" onAction="#reloadBackupsAction" text="Reload backups"/>
+                        <SeparatorMenuItem mnemonicParsing="false"/>
+                        <MenuItem mnemonicParsing="false" onAction="#openPreferences" text="Preferences..."/>
+                        <SeparatorMenuItem mnemonicParsing="false"/>
+                        <MenuItem mnemonicParsing="false" onAction="#quit" text="Quit"/>
+                    </Menu>
+
+                    <Menu mnemonicParsing="false" text="Help">
+                        <MenuItem mnemonicParsing="false" onAction="#helpAbout" text="About iTunes Backup Explorer"/>
+                    </Menu>
+                </MenuBar>
+            </top>
+            <left>
+                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" prefWidth="240.0" styleClass="sidebar"
+                            BorderPane.alignment="CENTER">
+                    <VBox fx:id="backupSidebarBox" prefWidth="100.0"/>
+                </ScrollPane>
+            </left>
+            <center>
+                <TabPane fx:id="tabPane" prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE" BorderPane.alignment="CENTER">
+                    <Tab text="Information">
+                        <fx:include fx:id="infoTabPage" source="info_tab.fxml"/>
+                    </Tab>
+                    <Tab text="Files">
+                        <fx:include fx:id="filesTabPage" source="files_tab.fxml"/>
+                    </Tab>
+                    <Tab text="Media">
+                        <fx:include fx:id="mediaTabPage" source="media_tab.fxml"/>
+                    </Tab>
+                    <Tab text="Apps">
+                        <fx:include fx:id="appsTabPage" source="apps_tab.fxml"/>
+                    </Tab>
+                    <Tab text="File Search">
+                        <fx:include fx:id="fileSearchTabPage" source="file_search_tab.fxml"/>
+                    </Tab>
+                    <Tab text="WhatsApp (Beta)">
+                        <fx:include fx:id="whatsappTabPage" source="whatsapp_tab.fxml"/>
+                    </Tab>
+                    <Tab text="Device">
+                        <fx:include fx:id="deviceTabPage" source="device_tab.fxml"/>
+                    </Tab>
+                    <Tab text="Mirror">
+                        <fx:include fx:id="mirrorTabPage" source="mirror_tab.fxml"/>
+                    </Tab>
+                </TabPane>
+            </center>
+            <bottom>
+                <HBox styleClass="status-bar" BorderPane.alignment="CENTER">
+                    <Label fx:id="statusTotalFiles" text="Total files: --"/>
+                    <Label fx:id="statusBackupSize" text="Size: --"/>
+                    <Label fx:id="statusEncryption" text="Encryption: --"/>
+                    <Label fx:id="statusBackupPath" text="Backup: --"/>
+                </HBox>
+            </bottom>
+        </BorderPane>
+
+        <VBox fx:id="welcomePane" alignment="CENTER" spacing="12" styleClass="welcome-pane"
+              maxWidth="Infinity" maxHeight="Infinity" mouseTransparent="true" pickOnBounds="false">
+            <Label text="iTunes Backup Explorer" styleClass="welcome-title"/>
+            <Label text="Encrypted and plain backup inspection, extraction and file management" styleClass="welcome-subtitle" wrapText="true"/>
+
+            <HBox alignment="CENTER" spacing="10">
+                <Button text="Open Backup..." onAction="#fileOpenBackup"/>
+                <Button text="Create Backup..." onAction="#createBackup"/>
+                <Button text="Preferences" onAction="#openPreferences"/>
+            </HBox>
+
+        </VBox>
+    </StackPane>
 </VBox>

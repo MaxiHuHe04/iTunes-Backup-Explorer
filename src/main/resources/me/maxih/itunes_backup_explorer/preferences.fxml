@@ -4,30 +4,86 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.14-internal"
+<AnchorPane prefHeight="620.0" prefWidth="760.0" stylesheets="@stylesheet.css" xmlns="http://javafx.com/javafx/11.0.14-internal"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="me.maxih.itunes_backup_explorer.ui.PreferencesController">
-   <VBox layoutX="86.0" layoutY="93.0" prefHeight="200.0" prefWidth="384.0" AnchorPane.bottomAnchor="50.0"
-         AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="20.0">
-      <Label text="Backup roots:">
-         <VBox.margin>
-            <Insets/>
-         </VBox.margin>
-      </Label>
-      <TextArea fx:id="backupRootsTextArea" prefHeight="200.0" prefWidth="200.0">
-         <VBox.margin>
-            <Insets top="10.0"/>
-         </VBox.margin>
-      </TextArea>
-   </VBox>
-   <HBox AnchorPane.bottomAnchor="20.0" AnchorPane.rightAnchor="20.0">
-      <Button mnemonicParsing="false" onAction="#save" text="Save">
-         <HBox.margin>
-            <Insets right="10.0"/>
-         </HBox.margin>
-      </Button>
-      <Button mnemonicParsing="false" onAction="#cancel" text="Cancel"/>
+   <ScrollPane fitToWidth="true" AnchorPane.bottomAnchor="60.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <VBox spacing="20" styleClass="preferences-container">
+         <padding>
+            <Insets top="20.0" right="20.0" bottom="20.0" left="20.0"/>
+         </padding>
+
+         <VBox spacing="10">
+            <Label text="Backup Locations" styleClass="section-title"/>
+            <Label text="Directories automatically monitored to discover backups" styleClass="info-label" wrapText="true"/>
+            <ListView fx:id="backupRootsListView" prefHeight="120.0">
+               <VBox.margin>
+                  <Insets top="5.0"/>
+               </VBox.margin>
+            </ListView>
+            <HBox spacing="10">
+               <Button text="Add Directory..." onAction="#addDirectory"/>
+               <Button text="Remove Selected" onAction="#removeDirectory"/>
+            </HBox>
+         </VBox>
+
+         <Separator/>
+
+         <VBox spacing="10">
+            <Label text="Appearance" styleClass="section-title"/>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+               <Label text="Theme" styleClass="info-label" minWidth="150"/>
+               <ComboBox fx:id="themeComboBox" prefWidth="180.0"/>
+            </HBox>
+         </VBox>
+
+         <Separator/>
+
+         <VBox spacing="10">
+            <Label text="Explorer Behavior" styleClass="section-title"/>
+            <CheckBox fx:id="autoSelectNewestBackupCheckBox" text="Automatically select the most recent backup on startup"/>
+            <CheckBox fx:id="expandDomainGroupsCheckBox" text="Automatically expand domain groups in the tree"/>
+            <CheckBox fx:id="confirmBeforeDeleteCheckBox" text="Ask for confirmation before deleting files"/>
+            <CheckBox fx:id="searchIncludeNonFilesCheckBox" text="Include folders and symbolic links in searches"/>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+               <Label text="Search result limit (0 = no limit)" styleClass="info-label" minWidth="300"/>
+               <Spinner fx:id="searchResultLimitSpinner" prefWidth="120"/>
+            </HBox>
+         </VBox>
+
+         <Separator/>
+
+         <VBox spacing="10">
+            <Label text="Export Settings" styleClass="section-title"/>
+            <CheckBox fx:id="preserveTimestampsCheckBox" text="Preserve original file timestamps"/>
+            <CheckBox fx:id="createDirectoryStructureCheckBox" text="Create directory structure on export"/>
+            <CheckBox fx:id="skipExistingFilesCheckBox" text="Automatically skip existing files"/>
+         </VBox>
+
+         <Separator/>
+
+         <VBox spacing="10">
+            <Label text="About" styleClass="section-title"/>
+            <HBox spacing="10">
+               <Label text="Version:" styleClass="info-label" minWidth="100.0"/>
+               <Label fx:id="versionLabel" styleClass="info-value"/>
+            </HBox>
+            <HBox spacing="10">
+               <Label text="Java Version:" styleClass="info-label" minWidth="100.0"/>
+               <Label fx:id="javaVersionLabel" styleClass="info-value"/>
+            </HBox>
+            <HBox spacing="10">
+               <Label text="Platform:" styleClass="info-label" minWidth="100.0"/>
+               <Label fx:id="platformLabel" styleClass="info-value"/>
+            </HBox>
+         </VBox>
+      </VBox>
+   </ScrollPane>
+
+   <HBox spacing="10" alignment="CENTER_RIGHT" AnchorPane.bottomAnchor="15.0" AnchorPane.rightAnchor="20.0">
+      <Button text="Save" onAction="#save" prefWidth="80.0"/>
+      <Button text="Cancel" onAction="#cancel" prefWidth="80.0"/>
    </HBox>
-   <Button layoutX="20.0" layoutY="355.0" mnemonicParsing="false" onAction="#resetToDefaults" text="Reset to defaults"
-           AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0"/>
+
+   <Button text="Reset to defaults" onAction="#resetToDefaults" AnchorPane.bottomAnchor="15.0" AnchorPane.leftAnchor="20.0"/>
 </AnchorPane>
